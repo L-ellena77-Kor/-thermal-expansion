@@ -70,6 +70,7 @@ details p{color:#5fd39a}
 <header>
   <div class="brand">열팽창 이야기</div>
   <div class="dots" id="dots"></div>
+  <button id="home" aria-label="1쪽으로 가기">첫 쪽으로</button>
   <button id="fs">전체화면</button>
   <button id="prev" aria-label="이전 쪽">이전</button>
   <button id="next" aria-label="다음 쪽">다음</button>
@@ -654,8 +655,8 @@ function show(i){
  Array.prototype.forEach.call(dots.children,function(d,k){d.classList.toggle('on',k===cur)});
  pg.init($('svg'),$('panel'));window.scrollTo(0,0);
 }
-$('prev').onclick=function(){show(cur-1)};$('next').onclick=function(){show(cur+1)};
-document.addEventListener('keydown',function(e){if(e.target.tagName==='INPUT'||modal.classList.contains('on'))return;if(e.key==='ArrowRight'||e.key==='PageDown')show(cur+1);if(e.key==='ArrowLeft'||e.key==='PageUp')show(cur-1)});
+$('home').onclick=function(){show(0)};$('prev').onclick=function(){show(cur-1)};$('next').onclick=function(){show(cur+1)};
+document.addEventListener('keydown',function(e){if(e.target.tagName==='INPUT'||modal.classList.contains('on'))return;if(e.key==='Home')show(0);if(e.key==='ArrowRight'||e.key==='PageDown')show(cur+1);if(e.key==='ArrowLeft'||e.key==='PageUp')show(cur-1)});
 var fsb=$('fs');
 function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement}
 fsb.onclick=function(){var de=document.documentElement;if(fsEl()){(document.exitFullscreen||document.webkitExitFullscreen).call(document)}else{(de.requestFullscreen||de.webkitRequestFullscreen).call(de)}};
