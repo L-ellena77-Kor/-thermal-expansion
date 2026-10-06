@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>열팽창 이야기 — 12가지 시뮬레이션</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#13202b;--panel:#1b2c3a;--line:#2e4457;--ink:#eef3f7;--dim:#9fb3c4;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#13202b}}
+:root[data-theme="dark"]{--bg:#13202b}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+header{display:flex;align-items:center;gap:14px;padding:12px 24px;border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.brand{font-size:22px;font-weight:700;white-space:nowrap}
+.dots{display:flex;gap:8px;flex:1;justify-content:center;flex-wrap:wrap}
+.dot{width:44px;height:44px;border-radius:50%;padding:0;font-size:20px;color:var(--dim)}
+.dot.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button{font:inherit;font-size:clamp(17px,1.6vw,21px);font-weight:600;color:var(--ink);background:transparent;border:2px solid var(--line);border-radius:12px;padding:9px 18px;cursor:pointer;white-space:nowrap}
+button:hover{border-color:var(--dim)}
+button:focus-visible,input:focus-visible{outline:3px solid #4fa8ff;outline-offset:3px}
+main{max-width:1340px;margin:0 auto;padding:16px 24px 28px}
+.ptitle{font-size:clamp(28px,3.3vw,46px);font-weight:700;margin:0;white-space:nowrap;letter-spacing:-0.02em}
+.psub{font-size:clamp(17px,1.7vw,23px);color:var(--dim);margin:4px 0 14px;white-space:nowrap}
+.grid{display:grid;grid-template-columns:minmax(0,1.38fr) minmax(0,1fr);gap:24px;align-items:start}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:6px}
+.stage svg{display:block;width:100%;height:auto}
+.ctl{margin-bottom:16px}
+.ctl .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:4px}
+.lab,.ctl label{font-size:clamp(17px,1.6vw,22px);color:var(--dim);white-space:nowrap;display:block;margin-bottom:6px}
+.ctl output{font-size:clamp(28px,3vw,44px);font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:34px;accent-color:#a9b4bd;cursor:pointer}
+.seg{display:flex;border:2px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{flex:1;border:0;border-radius:0;padding:10px 6px}
+.seg button+button{border-left:2px solid var(--line)}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.ro{border-top:1px solid var(--line);padding-top:10px;margin-top:8px}
+.ro .k{font-size:clamp(15px,1.4vw,19px);color:var(--dim);white-space:nowrap}
+.ro .v{font-size:clamp(32px,3.8vw,54px);font-weight:700;line-height:1.15;white-space:nowrap;font-variant-numeric:tabular-nums}
+.msgbox{border-top:1px solid var(--line);padding-top:12px;margin-top:10px}
+.msg{font-size:clamp(22px,2.3vw,32px);font-weight:700;white-space:nowrap}
+.why{font-size:clamp(16px,1.5vw,20px);color:var(--dim);white-space:nowrap;margin-top:4px;min-height:1.3em}
+.btns{display:flex;gap:10px;margin:4px 0 16px;flex-wrap:wrap}
+.note{font-size:clamp(14px,1.2vw,16px);color:var(--dim);margin-top:14px;white-space:nowrap}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}.ptitle,.psub,.msg,.why,.note,.brand{white-space:normal}header{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">열팽창 이야기</div>
+  <div class="dots" id="dots"></div>
+  <button id="fs">전체화면</button>
+  <button id="prev" aria-label="이전 쪽">이전</button>
+  <button id="next" aria-label="다음 쪽">다음</button>
+</header>
+<main>
+  <h1 class="ptitle" id="title"></h1>
+  <p class="psub" id="sub"></p>
+  <div class="grid">
+    <div class="stage"><svg id="svg" viewBox="0 0 800 560" role="img"></svg></div>
+    <div><div id="panel"></div><p class="note" id="note"></p><p class="note">Copyright 2026 오효선</p></div>
+  </div>
+</main>
+<script>
+(function(){
+var C={hot:'#ff5a45',cold:'#4fa8ff',steel:'#a9b4bd',ink:'#eef3f7',dim:'#9fb3c4',line:'#2e4457',panel:'#1b2c3a',ok:'#5fd39a',warn:'#ffc04d',wire:'#6f8597'};
+function $(id){return document.getElementById(id)}
+function hx(h){return [parseInt(h.substr(1,2),16),parseInt(h.substr(3,2),16),parseInt(h.substr(5,2),16)]}
+function mix(a,b,t){t=Math.max(0,Math.min(1,t));var A=hx(a),B=hx(b);return 'rgb('+A.map(function(v,i){return Math.round(v+(B[i]-v)*t)}).join(',')+')'}
+function tcol(T,ref,span){var t=(T-ref)/span;return t>=0?mix(C.steel,C.hot,t):mix(C.steel,C.cold,-t)}
+function P(pts){return 'M'+pts.map(function(p){return p[0].toFixed(1)+' '+p[1].toFixed(1)}).join(' L')}
+function tx(x,y,s,o){o=o||{};return '<text x="'+x+'" y="'+y+'" fill="'+(o.fill||C.dim)+'" font-size="'+(o.size||20)+'" text-anchor="'+(o.anchor||'start')+'" font-weight="'+(o.w||400)+'">'+s+'</text>'}
+function sgn(v,d){return (v>0?'+':'')+v.toFixed(d)}
+var audio=null;
+function ac(){if(!audio)audio=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();return audio}
+function tone(f,dur,type,vol){try{var a=ac(),o=a.createOscillator(),g=a.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(vol||0.2,a.currentTime);g.gain.exponentialRampToValueAtTime(0.0005,a.currentTime+dur);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+dur)}catch(e){}}
+function pluck(f){[1,2,3].forEach(function(h,i){tone(f*h,1.8-i*0.4,'sine',[0.3,0.1,0.05][i])})}
+
+var uid=0;
+function div(c){var d=document.createElement('div');d.className=c;return d}
+var UI={
+ slider:function(p,label,min,max,step,val,fmt,on){var d=div('ctl'),id='s'+(uid++);d.innerHTML='<div class="row"><label for="'+id+'"></label><output></output></div><input type="range" id="'+id+'" min="'+min+'" max="'+max+'" step="'+step+'" value="'+val+'">';d.querySelector('label').textContent=label;p.appendChild(d);var inp=d.querySelector('input'),out=d.querySelector('output');function u(){out.textContent=fmt(+inp.value)}inp.addEventListener('input',function(){u();on(+inp.value)});u();return{get v(){return +inp.value},set:function(v){inp.value=v;u()}}},
+ seg:function(p,label,opts,val,on){var d=div('ctl');if(label){var l=div('lab');l.textContent=label;d.appendChild(l)}var box=div('seg');d.appendChild(box);var v=val;var bs=opts.map(function(o,i){var b=document.createElement('button');b.textContent=o;b.onclick=function(){v=i;paint();on(i)};box.appendChild(b);return b});function paint(){bs.forEach(function(b,i){b.classList.toggle('on',i===v)})}paint();p.appendChild(d);return{get v(){return v}}},
+ ro:function(p,label){var d=div('ro');d.innerHTML='<div class="k"></div><div class="v"></div>';p.appendChild(d);var k=d.firstChild,v=d.lastChild;k.textContent=label;return{set:function(t,c){v.textContent=t;v.style.color=c||''},label:function(t){k.textContent=t}}},
+ msg:function(p){var d=div('msgbox');d.innerHTML='<div class="msg"></div><div class="why"></div>';p.appendChild(d);return{set:function(t,c,w){d.firstChild.textContent=t;d.firstChild.style.color=c||'';d.lastChild.textContent=w||''}}},
+ btns:function(p,list){var d=div('btns');var out=list.map(function(x){var b=document.createElement('button');b.textContent=x[0];b.onclick=x[1];d.appendChild(b);return b});p.appendChild(d);return out}
+};
+var timers=[];
+function every(ms,fn){timers.push(setInterval(fn,ms))}
+
+var pages=[];
+
+/* 1. Eiffel */
+pages.push({title:'1. 에펠탑은 여름에 더 높아질까?',sub:'철로 만든 약 300 m 탑은 온도에 따라 키가 변해요',note:'왼쪽 탑의 변화는 크게 과장 · 오른쪽 자는 실제 cm 눈금',
+init:function(svg,p){
+ var s=UI.slider(p,'철의 온도',-10,45,1,15,function(v){return v+'°C'},draw);
+ UI.btns(p,[['겨울 -10°C',function(){s.set(-10);draw()}],['봄·가을 15°C',function(){s.set(15);draw()}],['여름 햇볕 45°C',function(){s.set(45);draw()}]]);
+ var r=UI.ro(p,'높이 변화  ΔL = α × L × ΔT'),r2=UI.ro(p,'탑의 높이 (15°C에서 300 m)'),m=UI.msg(p);
+ function draw(){
+  var T=s.v,dT=T-15,dh=1.2e-5*300*dT,col=tcol(T,15,30);
+  var base=520,H0=430,H=H0*(1+0.004*dT),cx=250;
+  var prof=[[0,150],[0.05,130],[0.17,94],[0.25,74],[0.38,46],[0.55,30],[0.75,17],[0.9,9],[1,3]];
+  var L=prof.map(function(q){return [cx-q[1],base-q[0]*H]}),R=prof.slice().reverse().map(function(q){return [cx+q[1],base-q[0]*H]});
+  var g='<defs><pattern id="lat" width="14" height="14" patternUnits="userSpaceOnUse"><path d="M0 0 L14 14 M14 0 L0 14" stroke="'+col+'" stroke-width="1.6" opacity=".7"/></pattern></defs>';
+  g+='<line x1="40" y1="'+base+'" x2="480" y2="'+base+'" stroke="'+C.line+'" stroke-width="3"/>';
+  g+='<path d="'+P(L.concat(R))+' Z" fill="url(#lat)" stroke="'+col+'" stroke-width="4" stroke-linejoin="round"/>';
+  g+='<path d="M'+(cx-122)+' '+base+' Q'+cx+' '+(base-0.22*H)+' '+(cx+122)+' '+base+' Z" fill="'+C.panel+'" stroke="'+col+'" stroke-width="4"/>';
+  [[0.17,94],[0.38,46],[0.9,9]].forEach(function(q){g+='<rect x="'+(cx-q[1]-12)+'" y="'+(base-q[0]*H-7)+'" width="'+(2*q[1]+24)+'" height="13" rx="2" fill="'+col+'"/>'});
+  g+='<line x1="'+cx+'" y1="'+(base-H)+'" x2="'+cx+'" y2="'+(base-H-24)+'" stroke="'+col+'" stroke-width="4"/>';
+  g+='<line x1="40" y1="'+(base-H0)+'" x2="470" y2="'+(base-H0)+'" stroke="'+C.wire+'" stroke-width="2" stroke-dasharray="8 8"/>';
+  g+=tx(300,base-H0-10,'15°C 때 꼭대기',{size:18});
+  g+='<rect x="530" y="30" width="245" height="500" rx="14" fill="none" stroke="'+C.line+'" stroke-width="2"/>';
+  g+=tx(652,66,'꼭대기 확대',{anchor:'middle',size:22,fill:C.ink});
+  for(var c=-15;c<=15;c++){var y=300-c*12,big=c%5===0;g+='<line x1="590" y1="'+y+'" x2="'+(big?620:606)+'" y2="'+y+'" stroke="'+C.dim+'" stroke-width="'+(big?2.5:1.5)+'"/>';if(big)g+=tx(582,y+7,(c>0?'+':'')+c,{anchor:'end',size:19})}
+  g+=tx(560,512,'단위: cm',{size:17});
+  var my=300-dh*100*12;
+  g+='<line x1="620" y1="'+my+'" x2="700" y2="'+my+'" stroke="'+col+'" stroke-width="3" stroke-dasharray="6 5"/>';
+  g+='<polygon points="700,'+my+' 686,'+(my+70)+' 714,'+(my+70)+'" fill="'+col+'"/>';
+  svg.innerHTML=g;
+  r.set(sgn(dh*100,1)+' cm',col);r2.set((300+dh).toFixed(3)+' m');
+  m.set(dT>0?'늘어나서 더 높아져요':dT<0?'줄어들어서 낮아져요':'기준 높이',col,dT>0?'여름 한낮엔 약 10 cm 이상 키가 커요':dT<0?'겨울엔 기준보다 키가 작아져요':'온도를 바꿔 보세요');
+ }
+ draw();
+}});
+
+/* 2. Rail and bridge */
+pages.push({title:'2. 철로와 다리에 틈을 두는 이유',sub:'여름엔 틈이 좁아지고, 틈이 없으면 휘거나 끊어져요',note:'그림의 변형은 과장 · 요즘 고속철도는 레일을 용접해 강하게 고정해요(장대레일)',
+init:function(svg,p){
+ var kind=UI.seg(p,'무엇을 볼까요?',['철로','다리'],0,draw);
+ var gap=UI.seg(p,'이음새',['틈 있음','틈 없음'],0,draw);
+ var s=UI.slider(p,'온도',-20,60,1,15,function(v){return v+'°C'},draw);
+ var r=UI.ro(p,''),m=UI.msg(p);
+ function draw(){
+  var T=s.v,dT=T-15,col=tcol(T,15,35),rail=kind.v===0,has=gap.v===0,g='',gmm,A=0,brk=0;
+  if(!has){if(T>30)A=Math.min(rail?80:45,(T-30)*(rail?2.6:1.6));if(T<0)brk=Math.min(34,(-T)*1.6+6)}
+  if(rail){
+   gmm=12-0.3*dT;var gv=Math.max(0,gmm)*2.2;
+   var off=function(x){return (x>200&&x<600)?A*Math.sin(Math.PI*(x-200)/400):0};
+   g+=tx(30,60,'위에서 본 철로',{size:22,fill:C.ink});
+   g+='<rect x="20" y="150" width="760" height="250" rx="10" fill="#22303b"/>';
+   for(var x=50;x<=750;x+=40)g+='<rect x="'+(x-9)+'" y="'+(165+off(x))+'" width="18" height="220" rx="3" fill="#6b5641"/>';
+   [215,335].forEach(function(y,i){
+    if(has){[[20,280-gv/2],[280+gv/2,520-gv/2],[520+gv/2,780]].forEach(function(q){g+='<rect x="'+q[0]+'" y="'+(y-8)+'" width="'+(q[1]-q[0])+'" height="16" rx="2" fill="'+col+'"/>'})}
+    else if(brk>0){var bx=400+i*30;g+='<rect x="20" y="'+(y-8)+'" width="'+(bx-brk/2-20)+'" height="16" fill="'+col+'"/><rect x="'+(bx+brk/2)+'" y="'+(y-8)+'" width="'+(780-bx-brk/2)+'" height="16" fill="'+col+'"/>';
+     g+='<path d="M'+(bx-brk/2)+' '+(y-8)+' l6 5 l-6 5 l6 6" stroke="'+C.hot+'" stroke-width="3" fill="none"/><path d="M'+(bx+brk/2)+' '+(y-8)+' l-6 5 l6 5 l-6 6" stroke="'+C.hot+'" stroke-width="3" fill="none"/>'}
+    else{var pts=[];for(var x2=20;x2<=780;x2+=10)pts.push([x2,y+off(x2)]);g+='<path d="'+P(pts)+'" stroke="'+col+'" stroke-width="16" fill="none"/>'}
+   });
+   if(has)[280,520].forEach(function(x){g+=tx(x,138,gmm>0?gmm.toFixed(1)+' mm':'맞닿음',{anchor:'middle',size:22,fill:gmm>0?C.ink:C.hot,w:600})});
+   if(A>0)g+=tx(400,460,'휘어짐!',{anchor:'middle',size:30,fill:C.hot,w:700});
+   if(brk>0)g+=tx(415,460,'끊어짐!',{anchor:'middle',size:30,fill:C.cold,w:700});
+  }else{
+   gmm=30-0.6*dT;var gv2=Math.max(0,gmm)*1.2;
+   g+=tx(30,60,'옆에서 본 다리',{size:22,fill:C.ink});
+   g+='<rect x="20" y="470" width="760" height="70" fill="#1d3850"/>';
+   g+='<polygon points="20,290 120,290 145,540 20,540" fill="#4a5866"/><polygon points="680,290 780,290 780,540 655,540" fill="#4a5866"/><rect x="380" y="290" width="40" height="250" fill="#4a5866"/>';
+   if(has){g+='<rect x="20" y="250" width="'+(380-gv2/2)+'" height="36" fill="'+col+'"/><rect x="'+(400+gv2/2)+'" y="250" width="'+(380-gv2/2)+'" height="36" fill="'+col+'"/>';
+    g+=tx(400,225,gmm>0?gmm.toFixed(1)+' mm':'맞닿음',{anchor:'middle',size:22,fill:gmm>0?C.ink:C.hot,w:600});
+    g+='<path d="M60 250 L60 236 M740 250 L740 236" stroke="'+C.dim+'" stroke-width="2"/>'+tx(150,325,'고정',{size:18})+tx(650,325,'고정',{size:18,anchor:'end'});}
+   else{var off2=function(x){return (x>250&&x<550)?-A*Math.sin(Math.PI*(x-250)/300):0};var top=[],bot=[];for(var x3=20;x3<=780;x3+=10){top.push([x3,250+off2(x3)]);bot.unshift([x3,286+off2(x3)])}
+    g+='<path d="'+P(top.concat(bot))+' Z" fill="'+col+'"/>';
+    if(brk>0){var w=brk*0.8;g+='<polygon points="'+(400-w/2)+',250 '+(400+w/2)+',250 403,'+(250+Math.min(36,brk+4))+'" fill="'+C.panel+'" stroke="'+C.cold+'" stroke-width="2"/>';g+=tx(400,215,'금이 가요!',{anchor:'middle',size:30,fill:C.cold,w:700})}
+    if(A>0)g+=tx(400,150,'솟아올라요!',{anchor:'middle',size:30,fill:C.hot,w:700});}
+  }
+  svg.innerHTML=g;
+  if(has){r.label(rail?'레일 사이 틈 (25 m 레일)':'다리 이음새 틈 (50 m 구간)');r.set(gmm>0?gmm.toFixed(1)+' mm':'0 mm',col);
+   m.set(gmm<=0?'틈이 다 닫혔어요':dT>0?'늘어나서 틈이 좁아져요':dT<0?'줄어들어서 틈이 넓어져요':'설치할 때 모습',gmm<=0?C.hot:col,dT>0?'늘어날 자리를 미리 비워 둔 거예요':dT<0?'겨울엔 틈이 넓어져 덜컹 소리가 커져요':'온도를 바꿔 보세요');}
+  else{r.label(rail?(dT>=0?'레일이 미는 힘':'레일이 당기는 힘'):(dT>=0?'다리가 미는 힘':'다리가 당기는 힘'));
+   r.set(rail?'약 '+Math.round(1.98*Math.abs(dT))+'톤':(Math.abs(dT)<5?'작음':'아주 큼'),col);
+   m.set(A>0?(rail?'밀 곳이 없어 휘어요':'밀 곳이 없어 솟아요'):brk>0?(rail?'당기는 힘에 끊어져요':'당기는 힘에 금이 가요'):dT>0?'미는 힘이 쌓이는 중':dT<0?'당기는 힘이 쌓이는 중':'틈 없이 이어진 모습',A>0?C.hot:brk>0?C.cold:col,A>0||brk>0?'틈이 없으면 늘고 줄 자리가 없어요':'온도를 더 바꿔 보세요');}
+ }
+ draw();
+}});
+
+/* 3. Gas pipe */
+pages.push({title:'3. 가스관을 ㄷ자로 만드는 이유',sub:'위·아래가 고정된 관의 늘어남을 ㄷ자가 휘며 받아내요',note:'그림의 변형은 과장 · 송유관, 공장 배관도 같은 원리예요',
+init:function(svg,p){
+ var shp=UI.seg(p,'관 모양',['ㄷ자 있음','곧은 관'],0,draw);
+ var s=UI.slider(p,'관 온도',-20,60,1,20,function(v){return v+'°C'},draw);
+ var ln=UI.slider(p,'고정점 사이 길이',10,60,1,30,function(v){return v+' m'},draw);
+ var r=UI.ro(p,'길이 변화  ΔL = α × L × ΔT'),m=UI.msg(p);
+ var X0=165,X1=420,Y0=52,Y1=508,YA=200,YB=360;
+ function arm(yb,d,sg){var a=[];for(var i=0;i<=24;i++){var u=i/24,f=1-(3*u*u-2*u*u*u);a.push([X0+(X1-X0)*u,yb+sg*d*f])}return a}
+ function loop(d){var t=arm(YA,d,1),b=arm(YB,d,-1).reverse();return P([[X0,Y0]].concat(t,[[X1,YA],[X1,YB]],b,[[X0,Y1]]))}
+ function arrow(x,y,dir,c){var h=dir*44;return '<line x1="'+x+'" y1="'+y+'" x2="'+x+'" y2="'+(y+h)+'" stroke="'+c+'" stroke-width="5"/><path d="M'+(x-11)+' '+(y+h-dir*14)+' L'+x+' '+(y+h)+' L'+(x+11)+' '+(y+h-dir*14)+'" fill="none" stroke="'+c+'" stroke-width="5"/>'}
+ function draw(){
+  var T=s.v,dT=T-20,col=tcol(T,20,40),lp=shp.v===0,dl=1.2e-5*ln.v*dT*1000,g='';
+  g+='<defs><pattern id="hw" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="10" stroke="#3b5468" stroke-width="3"/></pattern></defs>';
+  g+='<rect x="60" y="20" width="60" height="520" fill="#25384a"/><rect x="60" y="20" width="60" height="520" fill="url(#hw)"/>';
+  g+='<rect x="124" y="30" width="80" height="22" rx="3" fill="#5d7183"/><rect x="124" y="508" width="80" height="22" rx="3" fill="#5d7183"/>';
+  g+=tx(214,48,'고정점',{size:19})+tx(214,526,'고정점',{size:19});
+  if(lp){g+='<path d="'+loop(0)+'" fill="none" stroke="'+C.wire+'" stroke-width="3" stroke-dasharray="8 8"/>';
+   var d=dT*1.0;g+='<path d="'+loop(d)+'" fill="none" stroke="'+col+'" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>';
+   if(dT!==0){g+='<circle cx="'+X0+'" cy="'+(YA+d)+'" r="20" fill="none" stroke="'+C.hot+'" stroke-width="4"/><circle cx="'+X0+'" cy="'+(YB-d)+'" r="20" fill="none" stroke="'+C.hot+'" stroke-width="4"/>';
+    var dir=dT>0?1:-1;g+=arrow(X0+36,100,dir,col)+arrow(X0+36,460,-dir,col)}}
+  else{g+='<line x1="'+X0+'" y1="'+Y0+'" x2="'+X0+'" y2="'+Y1+'" stroke="'+C.wire+'" stroke-width="3" stroke-dasharray="8 8"/>';
+   var A=dT>0?Math.min(120,dT*2.8):0,pts=[];for(var y=Y0;y<=Y1;y+=8)pts.push([X0+A*Math.sin(Math.PI*(y-Y0)/(Y1-Y0)),y]);pts.push([X0,Y1]);
+   g+='<path d="'+P(pts)+'" fill="none" stroke="'+col+'" stroke-width="16" stroke-linecap="round"/>';
+   if(A>0)g+=tx(X0+A+30,290,'관이 휘어요!',{size:28,fill:C.hot,w:700});
+   if(dT<-8){g+=tx(240,96,'당겨짐!',{size:26,fill:C.cold,w:700})+tx(240,480,'당겨짐!',{size:26,fill:C.cold,w:700})}}
+  var frac=(lp?0.06:1)*Math.min(1,Math.abs(dT)/40);
+  g+=tx(680,62,'고정점이',{anchor:'middle',size:20,fill:C.ink})+tx(680,88,'받는 힘',{anchor:'middle',size:20,fill:C.ink});
+  g+='<rect x="650" y="110" width="60" height="380" rx="8" fill="none" stroke="'+C.line+'" stroke-width="2"/>';
+  g+='<rect x="654" y="'+(486-372*frac)+'" width="52" height="'+(372*frac)+'" rx="5" fill="'+(frac>0.5?C.hot:frac>0?C.warn:C.line)+'"/>';
+  g+=tx(680,520,frac>0.5?'매우 큼':frac>0.02?'작음':'없음',{anchor:'middle',size:20,fill:C.ink,w:600});
+  svg.innerHTML=g;
+  r.set(sgn(dl,1)+' mm',col);
+  if(dT===0)m.set('시공할 때 모습',col,'온도를 바꿔 보세요');
+  else if(lp)m.set(dT>0?'ㄷ자가 오므라들어요':'ㄷ자가 벌어져요',col,dT>0?'늘어난 길이를 ㄷ자가 휘며 흡수해요':'줄어든 길이만큼 ㄷ자가 벌어져요');
+  else m.set(dT>0?'갈 곳 없이 휘어요':'양쪽이 당겨져요',dT>0?C.hot:C.cold,dT>0?'관이 휘고 이음부가 망가질 수 있어요':'이음부가 빠지거나 깨질 수 있어요');
+ }
+ draw();
+}});
+
+/* 4. Rebar + concrete */
+pages.push({title:'4. 철근 콘크리트 기둥은 찰떡궁합',sub:'둘은 온도에 따라 늘어나는 정도가 거의 같아요',note:'α 단위: ×10⁻⁶/°C · 콘크리트 약 12, 철 약 12, 구리 약 17, 알루미늄 약 23',
+init:function(svg,p){
+ var names=['철근','구리','알루미늄'],al=[12,17,23],bc=['#b5653a','#d98a4e','#cfd6dc'];
+ var mat=UI.seg(p,'콘크리트 속 뼈대 재료',names,0,draw);
+ var s=UI.slider(p,'온도',-20,60,1,20,function(v){return v+'°C'},draw);
+ var r1=UI.ro(p,'콘크리트가 늘어난 길이 (높이 10 m)'),r2=UI.ro(p,''),m=UI.msg(p);
+ function draw(){
+  var T=s.v,dT=T-20,ar=al[mat.v],acn=12,col=tcol(T,20,40);
+  var vis=function(a){return 1+a*dT*0.0002},Lc=600*vis(acn),Lr=600*vis(ar),g='';
+  var Hc=380*vis(acn),Hr=380*vis(ar),B=510,cx=260,bx=[212,260,308];
+  g+='<defs><pattern id="agg" width="26" height="22" patternUnits="userSpaceOnUse"><circle cx="5" cy="6" r="3" fill="#6f6c65"/><circle cx="17" cy="15" r="4" fill="#77746c"/><circle cx="22" cy="4" r="2" fill="#6a675f"/></pattern></defs>';
+  g+=tx(30,50,'콘크리트 기둥 속을 들여다본 모습',{size:22,fill:C.ink});
+  g+='<rect x="110" y="'+B+'" width="300" height="36" rx="4" fill="#5d6a74"/>'+tx(260,537,'바닥(기초)',{anchor:'middle',size:18,fill:C.ink});
+  g+='<rect x="175" y="'+(B-380)+'" width="170" height="380" fill="none" stroke="'+C.wire+'" stroke-width="2" stroke-dasharray="8 8"/>';
+  g+='<rect x="175" y="'+(B-Hc)+'" width="170" height="'+Hc+'" fill="#8a877f"/><rect x="175" y="'+(B-Hc)+'" width="170" height="'+Hc+'" fill="url(#agg)"/>';
+  bx.forEach(function(x){
+   if(Hr<Hc)g+='<rect x="'+(x-8)+'" y="'+(B-Hc)+'" width="16" height="'+Hc+'" fill="#2a2f33"/>';
+   g+='<rect x="'+(x-7)+'" y="'+(B-Hr)+'" width="14" height="'+Hr+'" rx="3" fill="'+bc[mat.v]+'"/>';
+   for(var y=B-Hr+10;y<B-4;y+=16)g+='<line x1="'+(x-7)+'" y1="'+y+'" x2="'+(x+7)+'" y2="'+(y+6)+'" stroke="#00000055" stroke-width="2"/>';
+  });
+  var mm=Math.abs(ar-acn)*Math.abs(dT),n=mm<100?0:Math.min(8,Math.ceil((mm-100)/80));
+  for(var k=0;k<n;k++){var cy=300+(k%2?1:-1)*(40+Math.floor(k/2)*55);
+   g+='<path d="M205 '+cy+' l-8 -6 l-8 7 l-8 -5 l-6 6" stroke="#16191c" stroke-width="3.5" fill="none"/><path d="M315 '+(cy+10)+' l8 6 l8 -7 l8 5 l6 -6" stroke="#16191c" stroke-width="3.5" fill="none"/>'}
+  g+='<rect x="470" y="400" width="22" height="14" rx="3" fill="#8a877f"/>'+tx(502,414,'콘크리트',{size:19});
+  g+='<rect x="470" y="432" width="22" height="14" rx="3" fill="'+bc[mat.v]+'"/>'+tx(502,446,names[mat.v]+' 뼈대',{size:19});
+  g+=tx(470,476,'점선: 20°C 때 높이',{size:17});
+  if(n>0)g+=tx(470,260,'금이 가요!',{size:32,fill:C.hot,w:700});
+  svg.innerHTML=g;
+  r1.set(sgn(0.12*dT,2)+' mm');r2.label(names[mat.v]+'가 늘어난 길이 (높이 10 m)');r2.set(sgn(ar*0.01*dT,2)+' mm',ar===acn?'':C.warn);
+  if(dT===0)m.set('기준 온도 20°C',col,'온도를 바꿔 보세요');
+  else if(n===0)m.set('함께 늘고 함께 줄어요',C.ok,'팽창 정도가 같아 금이 가지 않아요');
+  else m.set('늘어나는 정도가 달라요',C.hot,dT>0?'뼈대가 더 늘어나 콘크리트를 밀어요':'뼈대가 더 줄어 틈이 생기고 금이 가요');
+ }
+ draw();
+}});
+
+/* 5. Tooth filling */
+pages.push({title:'5. 충치 치료 재료를 고르는 기준',sub:'치아와 열팽창 정도가 비슷한 재료를 써야 해요',note:'변형은 크게 과장 · 실제 치과 재료도 열팽창 정도를 맞추어 만들어요',
+init:function(svg,p){
+ var mat=UI.seg(p,'충전재',['치아와 비슷한 재료','차이가 큰 재료'],0,draw);
+ var s=UI.slider(p,'입 속 온도',0,70,1,37,function(v){return v+'°C'},draw);
+ UI.btns(p,[['아이스크림',function(){s.set(2);draw()}],['평소 37°C',function(){s.set(37);draw()}],['뜨거운 국물',function(){s.set(65);draw()}]]);
+ var r=UI.ro(p,'열팽창 정도 α (치아 약 11)'),m=UI.msg(p);
+ var tooth='M190 200 C190 120 230 90 260 110 C285 85 315 85 330 105 C345 85 375 85 400 110 C430 90 470 120 470 200 L460 300 C455 330 440 340 430 345 L420 470 C415 520 380 520 375 470 L360 360 C350 350 310 350 300 360 L285 470 C280 520 245 520 240 470 L230 345 C220 340 205 330 200 300 Z';
+ var cav='M280 104 L380 104 L372 178 Q330 202 288 178 Z';
+ function draw(){
+  var T=s.v,big=mat.v===1,af=big?40:10,mis=(af-11)*(T-37),sc=Math.max(0.9,Math.min(1.08,1+mis*7e-5)),col=T>45?C.hot:T<20?C.cold:C.steel,g='';
+  g+=tx(30,60,(T<20?'차가운 음식':T>45?'뜨거운 음식':'평소')+'  '+T+'°C',{size:26,fill:col,w:700});
+  g+='<path d="'+tooth+'" fill="#ece6d8" stroke="#cfc6b2" stroke-width="3"/>';
+  g+='<path d="M300 240 Q330 215 360 240 L352 330 Q330 340 308 330 Z" fill="#e7a7a0" opacity=".7"/>';
+  g+='<path d="'+cav+'" fill="#3a2626"/>';
+  g+='<path d="'+cav+'" transform="translate(330 150) scale('+sc.toFixed(4)+') translate(-330 -150)" fill="#9aa3ab" stroke="'+(mis>300?C.hot:'#7b848c')+'" stroke-width="3"/>';
+  if(mis>300){var e=Math.min(1,(mis-300)/500);g+='<path d="M288 178 l-14 22 l8 14 l-16 '+(20+30*e)+'" stroke="#5a3a2a" stroke-width="4" fill="none"/><path d="M372 178 l14 18 l-6 16 l18 '+(18+30*e)+'" stroke="#5a3a2a" stroke-width="4" fill="none"/>';
+   g+=tx(560,230,'치아에',{size:28,fill:C.hot,w:700})+tx(560,266,'금이 가요!',{size:28,fill:C.hot,w:700})}
+  if(mis<-300){[[284,130],[378,140],[300,182],[362,184],[286,112]].forEach(function(q,i){g+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="'+(5+i%2*2)+'" fill="#7be08f"/>'});
+   g+=tx(560,230,'틈으로 세균이',{size:28,fill:C.cold,w:700})+tx(560,266,'들어가요!',{size:28,fill:C.cold,w:700})}
+  g+='<rect x="560" y="420" width="22" height="14" rx="3" fill="#ece6d8"/>'+tx(592,434,'치아',{size:19});
+  g+='<rect x="560" y="452" width="22" height="14" rx="3" fill="#9aa3ab"/>'+tx(592,466,'충전재',{size:19});
+  svg.innerHTML=g;
+  r.set('충전재 약 '+af,big?C.warn:C.ok);
+  if(Math.abs(mis)<=300)m.set(big&&T!==37?'아직은 버티는 중':'꼭 맞은 상태 유지',big&&T!==37?C.warn:C.ok,big?'온도 차가 커지면 문제가 생겨요':'치아와 함께 늘고 줄어요');
+  else if(mis>0)m.set('충전재가 더 늘어나요',C.hot,'치아를 밀어서 금이 갈 수 있어요');
+  else m.set('충전재가 더 줄어들어요',C.cold,'틈이 생겨 다시 충치가 생길 수 있어요');
+ }
+ draw();
+}});
+
+/* 6. String */
+pages.push({title:'6. 더운 날, 기타 줄이 풀리는 이유',sub:'금속 줄이 늘어나면 덜 팽팽해져 음이 낮아져요',note:'금속 줄(1번 줄, 미) 기준 계산 · 나무 몸통은 습도의 영향도 받아요',
+init:function(svg,p){
+ var bias=0,amp=0,ph=0;
+ var s=UI.slider(p,'기온',5,40,1,20,function(v){return v+'°C'},draw);
+ UI.btns(p,[['줄 튕기기',function(){amp=20;pluck(freq());}],['바른 음 듣기',function(){pluck(329.63)}],['줄감개로 조율',function(){bias=0.118*(s.v-20);draw()}]]);
+ var r=UI.ro(p,'지금 소리 (바른 음: 329.6 Hz)'),r2=UI.ro(p,'음 높이 차이'),m=UI.msg(p);
+ function force(){return 72+bias-0.118*(s.v-20)}
+ function freq(){return 329.63*Math.sqrt(force()/72)}
+ function draw(){
+  var F=force(),f=freq(),cents=1200*Math.log(f/329.63)/Math.LN2,T=s.v,col=tcol(T,20,20),sag=Math.max(0,72-F)*5,g='';
+  g+=tx(30,56,'기타 줄을 옆에서 본 모습',{size:22,fill:C.ink});
+  g+='<rect x="20" y="200" width="80" height="120" rx="10" fill="#3a2618"/>';
+  g+='<g transform="rotate('+(bias*25)+' 58 260)"><circle cx="58" cy="260" r="24" fill="#c9ccd0"/><rect x="54" y="238" width="8" height="44" fill="#6b7178"/></g>';
+  g+='<rect x="100" y="215" width="620" height="90" fill="#4a3020"/>';
+  [180,250,315,375,430,480,527,570].forEach(function(x){g+='<line x1="'+x+'" y1="215" x2="'+x+'" y2="305" stroke="#b9b2a0" stroke-width="3"/>'});
+  g+='<rect x="104" y="210" width="12" height="100" fill="#e8e2d0"/><rect x="706" y="210" width="12" height="100" fill="#e8e2d0"/>';
+  var cy=260+sag+amp*Math.sin(ph);
+  g+='<path d="M110 260 Q410 '+(cy*2-260).toFixed(1)+' 712 260" stroke="'+col+'" stroke-width="5" fill="none"/>';
+  g+=tx(110,350,'줄감개',{size:18})+tx(712,350,'줄 받침',{size:18,anchor:'end'});
+  var cx=400,cyy=540,R=150;
+  for(var c=-50;c<=50;c+=25){var a=(c/50)*60*Math.PI/180;g+='<line x1="'+(cx+(R-14)*Math.sin(a))+'" y1="'+(cyy-(R-14)*Math.cos(a))+'" x2="'+(cx+R*Math.sin(a))+'" y2="'+(cyy-R*Math.cos(a))+'" stroke="'+C.dim+'" stroke-width="3"/>'+tx(cx+(R+20)*Math.sin(a),cyy-(R+20)*Math.cos(a)+6,c===0?'0':(c>0?'+':'')+c,{anchor:'middle',size:18})}
+  g+='<path d="M'+(cx-R*Math.sin(Math.PI/3))+' '+(cyy-R*Math.cos(Math.PI/3))+' A'+R+' '+R+' 0 0 1 '+(cx+R*Math.sin(Math.PI/3))+' '+(cyy-R*Math.cos(Math.PI/3))+'" fill="none" stroke="'+C.line+'" stroke-width="3"/>';
+  var na=Math.max(-50,Math.min(50,cents))/50*60*Math.PI/180,nc=Math.abs(cents)<5?C.ok:C.warn;
+  g+='<line x1="'+cx+'" y1="'+cyy+'" x2="'+(cx+(R-22)*Math.sin(na))+'" y2="'+(cyy-(R-22)*Math.cos(na))+'" stroke="'+nc+'" stroke-width="6" stroke-linecap="round"/>';
+  g+=tx(70,520,'낮음',{size:20})+tx(730,520,'높음',{size:20,anchor:'end'})+tx(400,370,'튜너',{anchor:'middle',size:20});
+  svg.innerHTML=g;
+  r.set(f.toFixed(1)+' Hz',Math.abs(cents)<5?'':C.warn);r2.set(sgn(cents,0)+' 센트',Math.abs(cents)<5?C.ok:C.warn);
+  if(Math.abs(cents)<5)m.set('음이 잘 맞아요',C.ok,'조율된 상태예요');
+  else if(cents<0)m.set('음이 낮아졌어요',C.warn,'줄이 늘어나 느슨해졌어요 → 조율 필요');
+  else m.set('음이 높아졌어요',C.warn,'줄이 줄어들어 더 팽팽해졌어요');
+ }
+ every(30,function(){if(amp>0.3){ph+=1.3;amp*=0.965;draw()}else if(amp>0){amp=0;draw()}});
+ draw();
+}});
+
+/* 7. Jar lid */
+pages.push({title:'7. 꽉 낀 금속 뚜껑 쉽게 여는 법',sub:'뚜껑만 뜨거운 물에 담그면 금속이 유리보다 더 늘어나요',note:'틈 변화는 지름 7 cm 뚜껑 기준 · 금속 α 약 12, 유리 α 약 9 (×10⁻⁶/°C)',
+init:function(svg,p){
+ var st=null,shake=0;
+ var where=UI.seg(p,'데우는 곳',['뚜껑만','병 전체'],0,function(){st=null;draw()});
+ var s=UI.slider(p,'물 온도',20,80,1,20,function(v){return v+'°C'},function(){st=null;draw()});
+ UI.btns(p,[['뚜껑 돌려 열기',function(){st=gapUm()>=25?'ok':'fail';shake=st==='fail'?12:0;draw()}],['처음으로',function(){st=null;s.set(20);draw()}]]);
+ var r=UI.ro(p,'나사 사이 틈이 넓어진 정도'),m=UI.msg(p);
+ function gapUm(){var dT=s.v-20;return where.v===0?0.84*dT:0.21*dT}
+ function draw(){
+  var Tw=s.v,whole=where.v===1,gu=gapUm(),col=tcol(Tw,20,50),wc=mix('#4fa8ff','#ff8a45',(Tw-20)/60),g='',lo=st==='ok'?40:0,sx=shake>0?(shake%2?5:-5):0;
+  g+=tx(30,50,'병을 거꾸로 세운 모습',{size:22,fill:C.ink});
+  if(whole)g+='<rect x="70" y="80" width="380" height="450" rx="16" fill="none" stroke="'+C.dim+'" stroke-width="3"/><rect x="73" y="110" width="374" height="417" fill="'+wc+'" opacity=".35"/>';
+  else g+='<rect x="70" y="350" width="380" height="180" rx="16" fill="none" stroke="'+C.dim+'" stroke-width="3"/><rect x="73" y="375" width="374" height="152" fill="'+wc+'" opacity=".35"/>';
+  if(Tw>50){var sy=whole?96:362;[150,250,350].forEach(function(x){g+='<path d="M'+x+' '+sy+' q-10 -14 0 -28 q10 -14 0 -28" stroke="'+C.dim+'" stroke-width="3" fill="none"/>'})}
+  g+='<rect x="140" y="60" width="240" height="250" rx="44" fill="#9fd3e0" fill-opacity=".18" stroke="#9fd3e0" stroke-width="3"/>';
+  g+='<rect x="178" y="300" width="164" height="40" fill="#9fd3e0" fill-opacity=".18" stroke="#9fd3e0" stroke-width="3"/>';
+  g+='<g transform="translate('+sx+' '+lo+')"><rect x="166" y="326" width="188" height="70" rx="8" fill="'+col+'"/>'+(st==='ok'?'<path d="M140 430 A120 30 0 0 0 380 430" stroke="'+C.ok+'" stroke-width="4" fill="none"/><polygon points="380,430 366,420 368,438" fill="'+C.ok+'"/>':'')+'</g>';
+  g+='<rect x="500" y="60" width="280" height="460" rx="14" fill="none" stroke="'+C.line+'" stroke-width="2"/>'+tx(640,94,'확대: 나사 부분',{anchor:'middle',size:21,fill:C.ink});
+  var gp=6+Math.min(70,Math.max(0,gu)*1.2);
+  g+='<rect x="530" y="120" width="70" height="350" fill="#9fd3e0" fill-opacity=".25" stroke="#9fd3e0" stroke-width="2"/>';
+  for(var y=150;y<=430;y+=56)g+='<polygon points="600,'+y+' 618,'+(y+14)+' 600,'+(y+28)+'" fill="#9fd3e0" fill-opacity=".6"/>';
+  var lx=618+gp;
+  g+='<rect x="'+(lx+18)+'" y="110" width="40" height="370" fill="'+col+'"/>';
+  for(var y2=178;y2<=458;y2+=56)g+='<polygon points="'+(lx+18)+','+(y2-28)+' '+lx+','+(y2-14)+' '+(lx+18)+','+y2+'" fill="'+col+'"/>';
+  g+=tx(565,500,'유리',{anchor:'middle',size:19})+tx(lx+38,500,'뚜껑',{anchor:'middle',size:19});
+  svg.innerHTML=g;
+  r.set(sgn(Math.max(0,gu),0)+' µm',gu>=25?C.ok:'');
+  if(st==='ok')m.set('빙글, 열렸어요!',C.ok,'뚜껑이 더 늘어나 나사 틈이 생겼어요');
+  else if(st==='fail')m.set('꽉 끼어 안 열려요',C.hot,whole?'유리도 같이 늘어나 틈이 별로 안 생겨요':'물이 더 뜨거워야 해요');
+  else if(Tw===20)m.set('꽉 낀 상태',C.steel,'물 온도를 올려 보세요');
+  else m.set(whole?'병과 뚜껑이 함께 늘어나요':'뚜껑만 늘어나요',col,whole?'늘어나는 정도 차이만큼만 틈이 생겨요':'금속 뚜껑 지름이 커져 틈이 생겨요');
+ }
+ every(40,function(){if(shake>0){shake--;draw()}});
+ draw();
+}});
+
+/* 8. Fire alarm */
+pages.push({title:'8. 바이메탈 화재 경보기',sub:'불이 나면 바이메탈이 휘어 회로가 연결돼요',note:'바이메탈: 늘어나는 정도가 다른 두 금속을 붙인 띠 · 많이 늘어나는 쪽이 바깥으로 휘어요',
+init:function(svg,p){
+ var T=20,fire=false,snd=false,t=0;
+ var bs=UI.btns(p,[['불 붙이기',function(){fire=!fire;bs[0].textContent=fire?'불 끄기':'불 붙이기'}],['소리 켜기',function(){snd=!snd;if(snd)ac();bs[1].textContent=snd?'소리 끄기':'소리 켜기'}]]);
+ var r=UI.ro(p,'바이메탈 주변 온도'),r2=UI.ro(p,'회로'),m=UI.msg(p);
+ function draw(){
+  var closed=T>=60,d=closed?60:Math.max(0,(T-20)*1.5),wc=closed?C.warn:C.wire,g='';
+  g+='<path d="M100 290 L100 120 L700 120 L700 380 L462 380" stroke="'+wc+'" stroke-width="5" fill="none"/>';
+  g+='<path d="M100 350 L100 445 L180 445" stroke="'+wc+'" stroke-width="5" fill="none"/>';
+  g+='<rect x="76" y="290" width="48" height="60" rx="6" fill="#2a3a48" stroke="'+C.dim+'" stroke-width="2"/>'+tx(100,312,'+',{anchor:'middle',size:20,fill:C.ink})+tx(100,342,'−',{anchor:'middle',size:20,fill:C.ink})+tx(136,328,'전지',{size:19});
+  if(closed)g+='<circle cx="700" cy="190" r="56" fill="#ffd84d" opacity=".22"/>';
+  g+='<circle cx="700" cy="190" r="30" fill="'+(closed?'#ffd84d':'#2a3a48')+'" stroke="'+C.dim+'" stroke-width="2"/>'+tx(742,198,'전구',{size:19});
+  g+='<rect x="672" y="268" width="56" height="46" rx="8" fill="#2a3a48" stroke="'+C.dim+'" stroke-width="2"/>'+tx(700,299,'♪',{anchor:'middle',size:22,fill:closed?C.warn:C.dim})+tx(742,298,'경보음',{size:19});
+  if(closed&&t%10<6)g+='<path d="M738 270 q14 21 0 42 M752 262 q22 29 0 58" stroke="'+C.warn+'" stroke-width="3" fill="none"/>';
+  g+='<rect x="438" y="364" width="26" height="16" rx="3" fill="#c9a227"/>'+tx(475,372,'접점',{size:18});
+  g+='<rect x="178" y="420" width="38" height="52" rx="4" fill="#55687a"/>';
+  var top=[],bot=[];for(var s2=0;s2<=240;s2+=8){var y=445-d*Math.pow(s2/240,2);top.push([216+s2,y-5]);bot.push([216+s2,y+5])}
+  g+='<path d="'+P(top)+'" stroke="#a9b4bd" stroke-width="9" fill="none"/><path d="'+P(bot)+'" stroke="#d98a4e" stroke-width="9" fill="none"/>';
+  if(fire){var f=1+0.12*Math.sin(t*0.9);g+='<g transform="translate(340 540) scale('+f.toFixed(3)+') translate(-340 -540)"><path d="M340 470 C305 500 312 532 340 540 C368 532 375 500 340 470 Z" fill="'+C.hot+'"/><path d="M340 498 C326 512 330 532 340 536 C350 532 354 512 340 498 Z" fill="'+C.warn+'"/></g>'}
+  g+='<rect x="30" y="500" width="22" height="12" rx="3" fill="#a9b4bd"/>'+tx(60,512,'철 (덜 늘어남)',{size:18});
+  g+='<rect x="30" y="528" width="22" height="12" rx="3" fill="#d98a4e"/>'+tx(60,540,'구리 (잘 늘어남)',{size:18});
+  g+=tx(30,60,'화재 경보기 회로',{size:22,fill:C.ink});
+  svg.innerHTML=g;
+  r.set(Math.round(T)+'°C',tcol(T,20,60));r2.set(closed?'연결됨':'끊김',closed?C.warn:'');
+  if(closed)m.set('경보! 회로가 연결됐어요',C.warn,'바이메탈이 위로 휘어 접점에 닿았어요');
+  else if(T>23)m.set('바이메탈이 휘는 중',C.hot,'구리가 철보다 더 많이 늘어나요');
+  else m.set('평소엔 회로가 끊겨 있어요',C.steel,'불이 나면 바이메탈이 위로 휘어요');
+ }
+ every(50,function(){t++;var tg=fire?140:20;T+=(tg-T)*0.025;if(T>=60&&snd&&t%8===0)tone(880,0.18,'square',0.06);draw()});
+ draw();
+}});
+
+/* 9. Iron thermostat */
+pages.push({title:'9. 다리미는 어떻게 온도를 맞출까?',sub:'설정 온도가 되면 바이메탈이 휘어 전기를 스스로 끊어요',note:'식으면 바이메탈이 다시 펴져 연결돼요 → 끊기고 이어지기를 반복하며 온도 유지',
+init:function(svg,p){
+ var T=20,closed=true,power=true,setT=160,t=0;
+ UI.slider(p,'설정 온도 (온도 조절 다이얼)',100,200,5,setT,function(v){return v+'°C'},function(v){setT=v});
+ var bs=UI.btns(p,[['전원 끄기',function(){power=!power;bs[0].textContent=power?'전원 끄기':'전원 켜기'}],['처음부터',function(){T=20;closed=true;power=true;bs[0].textContent='전원 끄기'}]]);
+ var r=UI.ro(p,'다리미 바닥 온도'),r2=UI.ro(p,'전기'),m=UI.msg(p);
+ function draw(){
+  var on=power&&closed,wc=on?C.warn:C.wire,sc=mix(C.steel,C.hot,(T-20)/180),g='';
+  g+='<path d="M200 225 L200 150 Q200 104 246 104 L540 104 Q586 104 586 150 L586 225" fill="none" stroke="'+C.dim+'" stroke-width="5"/>';
+  g+='<path d="M232 225 L232 166 Q232 136 262 136 L524 136 Q554 136 554 166 L554 225" fill="none" stroke="'+C.dim+'" stroke-width="3"/>';
+  g+=tx(393,96,'손잡이',{anchor:'middle',size:19});
+  g+='<path d="M70 470 L705 470 Q745 470 728 432 L640 262 Q620 225 578 225 L116 225 Q70 225 70 272 Z" fill="#1f3242" stroke="'+C.dim+'" stroke-width="5" stroke-linejoin="round"/>';
+  if(T>60)g+='<rect x="70" y="502" width="680" height="10" rx="5" fill="'+C.hot+'" opacity="'+Math.min(0.35,(T-60)/400).toFixed(2)+'"/>';
+  g+='<path d="M62 470 L715 470 Q768 470 760 498 L62 498 Z" fill="'+sc+'"/>'+tx(400,530,'바닥판',{anchor:'middle',size:19});
+  g+='<path d="M70 360 Q30 370 34 420 Q38 470 20 520" stroke="'+C.dim+'" stroke-width="5" fill="none"/>'+tx(30,545,'전선',{size:18});
+  g+=tx(30,50,'다리미 속 회로',{size:22,fill:C.ink});
+  g+='<circle cx="130" cy="370" r="24" fill="#2a3a48" stroke="'+C.dim+'" stroke-width="2"/>'+tx(130,378,'~',{anchor:'middle',size:26,fill:C.ink})+tx(130,330,'전원',{anchor:'middle',size:17});
+  g+='<path d="M130 346 L130 300 L244 300" stroke="'+wc+'" stroke-width="5" fill="none"/>';
+  g+='<path d="M520 274 L520 252 L612 252 L612 440 M210 440 L130 440 L130 394" stroke="'+wc+'" stroke-width="5" fill="none"/>';
+  var hz=[[612,440]];for(var i=0;i<=19;i++)hz.push([592-i*20,i%2?428:452]);hz.push([210,440]);
+  var hc=on?'#ff7a3d':mix(C.steel,C.hot,(T-20)/200);
+  if(on)g+='<rect x="210" y="414" width="402" height="52" rx="20" fill="#ff7a3d" opacity=".16"/>';
+  g+='<path d="'+P(hz)+'" stroke="'+hc+'" stroke-width="5" fill="none"/>'+tx(410,410,'열선',{anchor:'middle',size:19});
+  g+='<rect x="508" y="274" width="24" height="14" rx="3" fill="#c9a227"/>'+tx(540,284,'접점',{size:17});
+  g+='<rect x="244" y="278" width="26" height="44" rx="4" fill="#55687a"/>';
+  var tip=closed?292:304+Math.min(36,Math.max(0,T-setT+4)*0.6),top=[],bot=[];
+  for(var s2=0;s2<=250;s2+=10){var y=300+(tip-300)*Math.pow(s2/250,2);top.push([270+s2,y-5]);bot.push([270+s2,y+5])}
+  g+='<path d="'+P(top)+'" stroke="#d98a4e" stroke-width="9" fill="none"/><path d="'+P(bot)+'" stroke="#a9b4bd" stroke-width="9" fill="none"/>';
+  g+=tx(280,370,'바이메탈 (위: 구리, 아래: 철)',{size:17});
+  svg.innerHTML=g;
+  r.set(Math.round(T)+'°C',tcol(T,20,160));r2.set(on?'흐름':'끊김',on?C.warn:'');
+  if(!power)m.set('전원이 꺼져 있어요',C.steel,'식어 가는 중이에요');
+  else if(on)m.set('접점 연결 → 가열 중',C.warn,'전류가 흘러 열선이 뜨거워져요');
+  else m.set('바이메탈이 휘어 끊김',C.cold,'식으면 다시 펴져서 연결돼요');
+ }
+ every(60,function(){var heat=power&&closed;T+=heat?(260-T)*0.012:(20-T)*0.006;if(closed&&T>=setT+4)closed=false;else if(!closed&&T<=setT-4)closed=true;draw()});
+ draw();
+}});
+
+/* 10. Power line */
+pages.push({title:'10. 여름엔 처지고 겨울엔 팽팽한 전깃줄',sub:'전선이 늘어나면 더 처지고, 줄어들면 팽팽해져요',note:'철탑 사이 300 m, 15°C에서 8 m 처진 알루미늄 전선(α 약 19×10⁻⁶/°C) 기준 · 처짐은 실제 비율',
+init:function(svg,p){
+ var s=UI.slider(p,'전선 온도',-15,40,1,15,function(v){return v+'°C'},draw);
+ UI.btns(p,[['겨울 -15°C',function(){s.set(-15);draw()}],['봄·가을 15°C',function(){s.set(15);draw()}],['여름 40°C',function(){s.set(40);draw()}]]);
+ var r=UI.ro(p,'가운데 처진 깊이'),r2=UI.ro(p,'전선 길이 변화 (300 m)'),r3=UI.ro(p,'전선을 당기는 힘 (장력)'),m=UI.msg(p);
+ var S=300,d0=8,L0=S+8*d0*d0/(3*S);
+ function sag(T){var L=L0*(1+19e-6*(T-15));return Math.sqrt(3*S*(L-S)/8)}
+ function wire(d){var pts=[];for(var x=100;x<=700;x+=10)pts.push([x,110+4*d*30*(x-100)*(700-x)/360000]);return P(pts)}
+ function tower(x){return '<polygon points="'+(x-32)+',500 '+(x+32)+',500 '+(x+10)+',100 '+(x-10)+',100" fill="none" stroke="#7d8b97" stroke-width="4"/><path d="M'+(x-28)+' 460 L'+(x+24)+' 380 L'+(x-20)+' 300 L'+(x+17)+' 220 L'+(x-13)+' 150 M'+(x+28)+' 460 L'+(x-24)+' 380 L'+(x+20)+' 300 L'+(x-17)+' 220 L'+(x+13)+' 150" stroke="#7d8b97" stroke-width="2" fill="none"/><rect x="'+(x-46)+'" y="104" width="92" height="8" fill="#7d8b97"/>'}
+ function draw(){
+  var T=s.v,d=sag(T),col=tcol(T,15,25),L=L0*(1+19e-6*(T-15)),g='';
+  if(T>=25)g+='<circle cx="400" cy="50" r="26" fill="#ffc04d"/>';
+  if(T<=0)[[200,60],[330,40],[470,70],[600,45],[260,160],[540,170]].forEach(function(q){g+=tx(q[0],q[1],'*',{size:34,fill:'#dfeaf3',anchor:'middle'})});
+  g+='<rect x="0" y="500" width="800" height="60" fill="#22303b"/>'+tower(90)+tower(710);
+  g+='<path d="'+wire(d0)+'" fill="none" stroke="'+C.wire+'" stroke-width="2" stroke-dasharray="8 8"/>';
+  g+='<path d="'+wire(d)+'" fill="none" stroke="'+col+'" stroke-width="6"/>';
+  var yb=110+d*30;
+  g+='<line x1="400" y1="110" x2="400" y2="'+yb+'" stroke="'+C.ink+'" stroke-width="2"/><line x1="388" y1="110" x2="412" y2="110" stroke="'+C.ink+'" stroke-width="2"/>';
+  g+=tx(412,(110+yb)/2+8,d.toFixed(2)+' m',{size:24,fill:C.ink,w:700});
+  g+=tx(560,yb+30,'점선: 15°C 때 모습',{size:17});
+  g+=tx(30,545,'철탑 사이 300 m',{size:18});
+  svg.innerHTML=g;
+  r.set(d.toFixed(2)+' m',col);r2.set(sgn((L-L0)*100,1)+' cm',col);
+  var ten=(d0/d-1)*100;r3.set(sgn(ten,0)+' %',ten>10?C.cold:'');
+  if(T>15)m.set('늘어나서 더 처져요',col,'여름엔 전선이 아래로 더 내려와요');
+  else if(T<15)m.set('줄어들어 팽팽해져요',col,'너무 팽팽하게 걸면 겨울에 끊어질 수 있어요');
+  else m.set('기준 모습',col,'온도를 바꿔 보세요');
+ }
+ draw();
+}});
+
+/* 11. Alcohol thermometer */
+pages.push({title:'11. 알코올 온도계의 비밀',sub:'에탄올은 많이, 그리고 고르게 늘어나서 눈금 읽기가 쉬워요',note:'에탄올 부피팽창 약 1.1×10⁻³/°C · 물은 그보다 훨씬 작고 4°C 근처에서는 거꾸로 변해요',
+init:function(svg,p){
+ var s=UI.slider(p,'온도',-20,60,1,20,function(v){return v+'°C'},draw);
+ var r=UI.ro(p,'에탄올 부피 변화 (0°C 기준)'),r2=UI.ro(p,'물 부피 변화 (0°C 기준)'),m=UI.msg(p);
+ var WT=[[0,1.00013],[4,1],[10,1.00027],[20,1.00177],[30,1.00435],[40,1.00782],[50,1.0121],[60,1.01709]];
+ function relW(T){T=Math.max(0,T);for(var i=1;i<WT.length;i++)if(T<=WT[i][0]){var a=WT[i-1],b=WT[i];return a[1]+(b[1]-a[1])*(T-a[0])/(b[0]-a[0])}return WT[WT.length-1][1]}
+ var K=4318;
+ function yE(T){return 440-K*1.1e-3*(T+20)}
+ function yW(T){return 400-K*(relW(T)-1)}
+ function thermo(x,y,c){return '<rect x="'+(x-14)+'" y="50" width="28" height="430" rx="14" fill="#9fd3e0" fill-opacity=".12" stroke="#9fd3e0" stroke-width="2"/><circle cx="'+x+'" cy="500" r="36" fill="#9fd3e0" fill-opacity=".12" stroke="#9fd3e0" stroke-width="2"/><circle cx="'+x+'" cy="500" r="30" fill="'+c+'"/><rect x="'+(x-6)+'" y="'+y+'" width="12" height="'+(492-y)+'" fill="'+c+'"/>'}
+ function draw(){
+  var T=s.v,frozen=T<0,g='';
+  g+=thermo(250,yE(T),'#ff5a45')+thermo(560,frozen?yW(0):yW(T),frozen?'#cfe8ff':'#4fa8ff');
+  for(var t=-20;t<=60;t+=10){var y=yE(t);g+='<line x1="212" y1="'+y+'" x2="232" y2="'+y+'" stroke="'+C.ink+'" stroke-width="2"/>'+tx(202,y+7,t,{anchor:'end',size:19,fill:C.ink})}
+  for(var t2=0;t2<=60;t2+=10){var y2=yW(t2);g+='<line x1="578" y1="'+y2+'" x2="598" y2="'+y2+'" stroke="'+C.ink+'" stroke-width="2"/>'}
+  [[20,'20'],[40,'40'],[60,'60']].forEach(function(q){g+=tx(606,yW(q[0])+6,q[1],{size:17,fill:C.ink})});g+=tx(606,yW(5)+12,'0~10',{size:17,fill:C.ink});
+  g+=tx(250,30,'에탄올',{anchor:'middle',size:24,fill:C.ink,w:700})+tx(560,30,'물',{anchor:'middle',size:24,fill:C.ink,w:700});
+  g+=tx(330,250,'눈금 간격',{size:19})+tx(330,276,'일정해요',{size:19,fill:C.ok,w:600});
+  g+=tx(640,250,'눈금 간격이',{size:19})+tx(640,276,'제멋대로',{size:19,fill:C.warn,w:600});
+  if(frozen)g+=tx(640,330,'얼어요!',{size:26,fill:'#cfe8ff',w:700});
+  svg.innerHTML=g;
+  r.set(sgn(1.1e-3*T*100,1)+' %',C.hot);r2.set(frozen?'얼음':sgn((relW(T)/relW(0)-1)*100,2)+' %',C.cold);
+  if(frozen)m.set('물은 얼어 버려요',C.cold,'에탄올은 -114°C까지 얼지 않아요');
+  else if(T<=8)m.set('물은 거꾸로 줄기도 해요',C.warn,'0~4°C에선 데워도 부피가 줄어요');
+  else m.set('에탄올이 훨씬 많이 늘어나요',C.hot,'고르게 늘어나 눈금 간격이 일정해요');
+ }
+ draw();
+}});
+
+/* 12. Glass cup thermal shock */
+pages.push({title:'12. 유리컵에 뜨거운 물을 부으면?',sub:'물에 닿은 곳만 먼저 늘어나고, 두꺼운 바닥은 그대로라 깨져요',note:'유리는 열이 느리게 전달돼요 · 내열 유리는 열팽창이 일반 유리의 약 1/3이라 잘 안 깨져요',
+init:function(svg,p){
+ var W=22,H=28,CS=14,X0=400-11*CS,Y0=80,TT,fill,poured,crack,peak;
+ var gt=UI.seg(p,'유리 종류',['일반 유리','내열 유리'],0,function(){reset();draw()});
+ var s=UI.slider(p,'물 온도',40,100,5,95,function(v){return v+'°C'},function(){reset();draw()});
+ UI.btns(p,[['뜨거운 물 붓기',function(){reset();poured=true}],['처음으로',function(){reset();draw()}]]);
+ var r=UI.ro(p,'유리 위·아래 온도 차'),m=UI.msg(p);
+ function isG(c,r){return r>=22||c<2||c>=20}
+ function reset(){TT=[];for(var r=0;r<H;r++){var a=[];for(var c=0;c<W;c++)a.push(20);TT.push(a)}fill=22;poured=false;crack=null;peak=0}
+ reset();
+ function rowMean(r){var a=0,n=0;for(var c=0;c<W;c++)if(isG(c,r)){a+=TT[r][c];n++}return a/n}
+ function heatCol(T){var t=(T-20)/70;return t<0.5?mix('#5a6b7a','#ffc04d',t*2):mix('#ffc04d','#ff5a45',(t-0.5)*2)}
+ function step(){
+  var Tw=s.v;
+  for(var k=0;k<2;k++){var N=TT.map(function(a){return a.slice()});
+   for(var r=0;r<H;r++)for(var c=0;c<W;c++){if(!isG(c,r))continue;var sum=0;
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(q){var cc=c+q[0],rr=r+q[1];if(cc<0||cc>=W||rr<0||rr>=H)return;if(isG(cc,rr))sum+=TT[rr][cc]-TT[r][c];else if(rr>=fill)sum+=Tw-TT[r][c]});
+    N[r][c]=TT[r][c]+0.05*sum}
+   TT=N}
+ }
+ function draw(){
+  var alpha=gt.v===0?9:3.3,e=0.0012*alpha/9,g='',rm=[],mx=-1,mn=999,best=0,br=0;
+  for(var r=0;r<H;r++){rm.push(rowMean(r));mx=Math.max(mx,rm[r]);mn=Math.min(mn,rm[r])}
+  for(var r2=0;r2<H-1;r2++){var dd=Math.abs(rm[r2]-rm[r2+1]);if(dd>best){best=dd;br=r2}}
+  var diff=mx-mn;peak=Math.max(peak,diff);
+  if(!crack&&alpha*diff>405)crack={r:Math.max(18,Math.min(23,br))};
+  g+='<rect x="'+X0+'" y="'+Y0+'" width="'+(W*CS)+'" height="'+(H*CS)+'" fill="none" stroke="'+C.wire+'" stroke-width="2" stroke-dasharray="8 8"/>';
+  if(poured){var wy=Y0+fill*CS;g+='<rect x="'+(X0+2*CS)+'" y="'+wy+'" width="'+(18*CS)+'" height="'+(Y0+22*CS-wy)+'" fill="'+mix('#4fa8ff','#ff8a45',(s.v-20)/80)+'" opacity=".45"/>';
+   if(s.v>=60)[300,400,500].forEach(function(x){g+='<path d="M'+x+' '+(wy-8)+' q-10 -14 0 -28 q10 -14 0 -28" stroke="'+C.dim+'" stroke-width="3" fill="none"/>'})}
+  for(var r3=0;r3<H;r3++){var sc=1+e*(rm[r3]-20);for(var c=0;c<W;c++){if(!isG(c,r3))continue;var x=X0+c*CS,xc=400+(x-400)*sc;g+='<rect x="'+xc.toFixed(1)+'" y="'+(Y0+r3*CS)+'" width="'+(CS*sc+0.6).toFixed(1)+'" height="'+(CS+0.6)+'" fill="'+heatCol(TT[r3][c])+'"/>'}}
+  if(crack){var cy=Y0+(crack.r+1)*CS,sl=1+e*(rm[crack.r]-20),xl=400-(400-X0)*sl;
+   g+='<path d="M'+(xl-4)+' '+(cy-6)+' l18 8 l10 -10 l14 12 l12 -6 l16 14 l20 4 l14 16" stroke="#eef3f7" stroke-width="4" fill="none"/>';
+   g+='<path d="M'+(400+(400-X0)*sl+4)+' '+(cy+4)+' l-16 -10 l-12 12 l-18 -8 l-10 16" stroke="#eef3f7" stroke-width="4" fill="none"/>';
+   g+=tx(400,50,'쩍! 금이 갔어요',{anchor:'middle',size:32,fill:C.hot,w:700})}
+  g+=tx(40,520,'차가움',{size:18})+'<rect x="110" y="506" width="160" height="16" rx="4" fill="url(#hg)"/>'+tx(282,520,'뜨거움',{size:18});
+  g='<defs><linearGradient id="hg"><stop offset="0" stop-color="#5a6b7a"/><stop offset=".5" stop-color="#ffc04d"/><stop offset="1" stop-color="#ff5a45"/></linearGradient></defs>'+g;
+  svg.innerHTML=g;
+  r.set(Math.round(diff)+'°C',diff>30?C.hot:'');
+  if(crack)m.set('늘어난 곳과 그대로인 곳이 어긋나요',C.hot,'뜨거운 벽은 늘어나는데 두꺼운 바닥은 아직 차가워요');
+  else if(!poured)m.set('물을 부어 보세요',C.steel,'처음엔 컵 전체가 20°C예요');
+  else if(diff>8)m.set('물에 닿은 곳만 먼저 늘어나요',C.warn,gt.v===0?'열이 바닥까지 가는 데 시간이 걸려요':'내열 유리는 조금만 늘어나 버텨요');
+  else m.set('온도가 고르게 퍼졌어요',C.ok,'이제는 위아래가 함께 늘어났어요');
+ }
+ every(50,function(){if(poured){if(fill>4)fill--;step()}draw()});
+ draw();
+}});
+
+var cur=0,dots=$('dots');
+pages.forEach(function(pg,i){var b=document.createElement('button');b.className='dot';b.textContent=i+1;b.setAttribute('aria-label',(i+1)+'쪽');b.onclick=function(){show(i)};dots.appendChild(b)});
+function show(i){
+ timers.forEach(clearInterval);timers=[];cur=(i+pages.length)%pages.length;var pg=pages[cur];
+ $('title').textContent=pg.title;$('sub').textContent=pg.sub;$('note').textContent=pg.note||'';
+ $('svg').setAttribute('aria-label',pg.title);$('svg').innerHTML='';$('panel').innerHTML='';
+ Array.prototype.forEach.call(dots.children,function(d,k){d.classList.toggle('on',k===cur)});
+ pg.init($('svg'),$('panel'));window.scrollTo(0,0);
+}
+$('prev').onclick=function(){show(cur-1)};$('next').onclick=function(){show(cur+1)};
+document.addEventListener('keydown',function(e){if(e.target.tagName==='INPUT')return;if(e.key==='ArrowRight'||e.key==='PageDown')show(cur+1);if(e.key==='ArrowLeft'||e.key==='PageUp')show(cur-1)});
+var fsb=$('fs');
+function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement}
+fsb.onclick=function(){var de=document.documentElement;if(fsEl()){(document.exitFullscreen||document.webkitExitFullscreen).call(document)}else{(de.requestFullscreen||de.webkitRequestFullscreen).call(de)}};
+function fsLabel(){fsb.textContent=fsEl()?'전체화면 끄기':'전체화면'}
+document.addEventListener('fullscreenchange',fsLabel);document.addEventListener('webkitfullscreenchange',fsLabel);
+show(0);
+})();
+</script>
+</body>
+</html>
