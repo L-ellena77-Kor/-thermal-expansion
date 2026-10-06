@@ -499,7 +499,7 @@ init:function(svg,p){
  var gt=UI.seg(p,'유리 종류',['일반 유리','내열 유리'],0,function(){reset();draw()});
  var s=UI.slider(p,'물 온도',40,100,5,95,function(v){return v+'°C'},function(){reset();draw()});
  UI.btns(p,[['뜨거운 물 붓기',function(){reset();poured=true}],['처음으로',function(){reset();draw()}]]);
- var r=UI.ro(p,'유리 위·아래 온도 차'),m=UI.msg(p);
+ var rd=UI.ro(p,'유리 위·아래 온도 차'),m=UI.msg(p);
  function isG(c,r){return r>=22||c<2||c>=20}
  function reset(){TT=[];for(var r=0;r<H;r++){var a=[];for(var c=0;c<W;c++)a.push(20);TT.push(a)}fill=22;poured=false;crack=null;peak=0}
  reset();
@@ -520,7 +520,7 @@ init:function(svg,p){
   var diff=mx-mn;peak=Math.max(peak,diff);
   if(!crack&&alpha*diff>405)crack={r:Math.max(18,Math.min(23,br))};
   g+='<rect x="'+X0+'" y="'+Y0+'" width="'+(W*CS)+'" height="'+(H*CS)+'" fill="none" stroke="'+C.wire+'" stroke-width="2" stroke-dasharray="8 8"/>';
-  if(poured){var wy=Y0+fill*CS;g+='<rect x="'+(X0+2*CS)+'" y="'+wy+'" width="'+(18*CS)+'" height="'+(Y0+22*CS-wy)+'" fill="'+mix('#4fa8ff','#ff8a45',(s.v-20)/80)+'" opacity=".45"/>';
+  if(poured){var wy=Y0+fill*CS;g+='<rect x="'+(X0+2*CS)+'" y="'+wy+'" width="'+(18*CS)+'" height="'+(Y0+22*CS-wy)+'" fill="'+mix('#4fa8ff','#ff8a45',(s.v-20)/140)+'" opacity=".35"/>';
    if(s.v>=60)[300,400,500].forEach(function(x){g+='<path d="M'+x+' '+(wy-8)+' q-10 -14 0 -28 q10 -14 0 -28" stroke="'+C.dim+'" stroke-width="3" fill="none"/>'})}
   for(var r3=0;r3<H;r3++){var sc=1+e*(rm[r3]-20);for(var c=0;c<W;c++){if(!isG(c,r3))continue;var x=X0+c*CS,xc=400+(x-400)*sc;g+='<rect x="'+xc.toFixed(1)+'" y="'+(Y0+r3*CS)+'" width="'+(CS*sc+0.6).toFixed(1)+'" height="'+(CS+0.6)+'" fill="'+heatCol(TT[r3][c])+'"/>'}}
   if(crack){var cy=Y0+(crack.r+1)*CS,sl=1+e*(rm[crack.r]-20),xl=400-(400-X0)*sl;
@@ -530,10 +530,10 @@ init:function(svg,p){
   g+=tx(40,520,'차가움',{size:18})+'<rect x="110" y="506" width="160" height="16" rx="4" fill="url(#hg)"/>'+tx(282,520,'뜨거움',{size:18});
   g='<defs><linearGradient id="hg"><stop offset="0" stop-color="#5a6b7a"/><stop offset=".5" stop-color="#ffc04d"/><stop offset="1" stop-color="#ff5a45"/></linearGradient></defs>'+g;
   svg.innerHTML=g;
-  r.set(Math.round(diff)+'°C',diff>30?C.hot:'');
-  if(crack)m.set('늘어난 곳과 그대로인 곳이 어긋나요',C.hot,'뜨거운 벽은 늘어나는데 두꺼운 바닥은 아직 차가워요');
+  rd.set(Math.round(diff)+'°C',diff>30?C.hot:'');
+  if(crack)m.set('어긋나서 금이 갔어요',C.hot,'뜨거운 벽은 늘고 두꺼운 바닥은 그대로예요');
   else if(!poured)m.set('물을 부어 보세요',C.steel,'처음엔 컵 전체가 20°C예요');
-  else if(diff>8)m.set('물에 닿은 곳만 먼저 늘어나요',C.warn,gt.v===0?'열이 바닥까지 가는 데 시간이 걸려요':'내열 유리는 조금만 늘어나 버텨요');
+  else if(diff>8)m.set('물 닿은 곳만 먼저 늘어나요',C.warn,gt.v===0?'열이 바닥까지 가는 데 시간이 걸려요':'내열 유리는 조금만 늘어나 버텨요');
   else m.set('온도가 고르게 퍼졌어요',C.ok,'이제는 위아래가 함께 늘어났어요');
  }
  every(50,function(){if(poured){if(fill>4)fill--;step()}draw()});
