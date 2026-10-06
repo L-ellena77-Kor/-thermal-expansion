@@ -47,6 +47,22 @@ input[type=range]{width:100%;height:34px;accent-color:#a9b4bd;cursor:pointer}
 .why{font-size:clamp(16px,1.5vw,20px);color:var(--dim);white-space:nowrap;margin-top:4px;min-height:1.3em}
 .btns{display:flex;gap:10px;margin:4px 0 16px;flex-wrap:wrap}
 .note{font-size:clamp(14px,1.2vw,16px);color:var(--dim);margin-top:14px;white-space:nowrap}
+.modal{position:fixed;inset:0;background:rgba(5,10,15,.72);display:none;align-items:center;justify-content:center;z-index:20;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 16px)}
+.modal.on{display:flex}
+.mbox{background:var(--panel);border:2px solid var(--line);border-radius:18px;max-width:980px;width:100%;max-height:100%;overflow:auto;padding:0 32px 28px}
+.mhead{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 0 12px;border-bottom:1px solid var(--line)}
+.mhead h2{margin:0;font-size:clamp(24px,2.8vw,36px);white-space:nowrap}
+.mbox h3{font-size:clamp(21px,2.2vw,28px);margin:26px 0 8px;color:#ffc04d;white-space:nowrap}
+.mbox p,.mbox li{font-size:clamp(17px,1.7vw,21px);line-height:1.65;color:var(--ink);margin:6px 0}
+.mbox ul{padding-left:24px;margin:6px 0}
+.mbox b{color:#ffc04d}
+.tbl{overflow-x:auto;margin:10px 0}
+.tbl table{border-collapse:collapse;min-width:640px;width:100%}
+.tbl th,.tbl td{border:1px solid var(--line);padding:10px 12px;font-size:clamp(16px,1.6vw,20px);text-align:center;white-space:nowrap}
+.tbl th{background:#22384a;color:var(--dim)}
+details{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:10px 0}
+summary{font-size:clamp(17px,1.7vw,21px);cursor:pointer;font-weight:600}
+details p{color:#5fd39a}
 @media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}.ptitle,.psub,.msg,.why,.note,.brand{white-space:normal}header{flex-wrap:wrap}}
 </style>
 </head>
@@ -66,6 +82,7 @@ input[type=range]{width:100%;height:34px;accent-color:#a9b4bd;cursor:pointer}
     <div><div id="panel"></div><p class="note" id="note"></p><p class="note">Copyright 2026 엘레나</p></div>
   </div>
 </main>
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="mbox" id="mbox"></div></div>
 <script>
 (function(){
 var C={hot:'#ff5a45',cold:'#4fa8ff',steel:'#a9b4bd',ink:'#eef3f7',dim:'#9fb3c4',line:'#2e4457',panel:'#1b2c3a',ok:'#5fd39a',warn:'#ffc04d',wire:'#6f8597'};
@@ -92,6 +109,37 @@ var UI={
 };
 var timers=[];
 function every(ms,fn){timers.push(setInterval(fn,ms))}
+
+
+var INFO11='<div class="mhead"><h2>알코올 온도계 자세히 알아보기</h2><button id="mclose">닫기</button></div>'+
+'<h3>1. 에탄올은 언제 얼고, 언제 끓을까?</h3>'+
+'<p>에탄올의 <b>어는점은 약 −114°C</b>, <b>끓는점은 약 78°C</b>예요. 그래서 에탄올 온도계는 영하 수십 도부터 70°C 정도까지 잴 수 있어요. 남극처럼 아주 추운 곳에서도 얼지 않지만, 끓는 물(100°C)은 잴 수 없어요.</p>'+
+'<p>에탄올은 원래 색이 없어서 눈금을 읽기 쉽게 빨강이나 파랑 색소를 넣어요. 요즘 파는 빨간 액체 온도계 중에는 에탄올 대신 등유 계열 같은 다른 액체를 쓴 것도 많아요.</p>'+
+'<h3>2. 에탄올은 정말 고르게 늘어날까?</h3>'+
+'<p><b>거의 고르게</b> 늘어나요. 다만 완벽하게 똑같지는 않아요. 1°C마다 늘어나는 정도가 0°C 근처에서는 처음 부피의 약 0.10%, 40~50°C에서는 약 0.12%로 온도가 오를수록 조금씩 커져요.</p>'+
+'<p>생활 온도 범위에서는 이 차이가 작아서 눈금 간격이 거의 일정해요. 실제 온도계는 만들 때 기준 온도에 맞춰 눈금을 보정해서 이 작은 차이도 바로잡아요. 이 쪽의 시뮬레이션은 단순하게 완전히 일정하다고 놓고 계산했어요.</p>'+
+'<h3>3. 유리관은 늘어나지 않나요?</h3>'+
+'<p>유리관도 데우면 늘어나요. 하지만 유리의 부피 팽창은 에탄올의 약 40분의 1 정도로 아주 작아요. 그래서 액체가 늘어난 만큼 거의 그대로 가는 관을 따라 올라가요.</p>'+
+'<p>관이 가늘수록 같은 부피가 늘어나도 기둥이 더 높이 올라가서 눈금 사이가 넓어지고, 온도를 더 자세히 읽을 수 있어요.</p>'+
+'<h3>4. 특별한 건 에탄올일까, 물일까?</h3>'+
+'<p>특별한 쪽은 <b>물</b>이에요. 대부분의 액체(에탄올, 수은, 기름 등)는 온도가 오르면 꾸준히 늘어나요.</p>'+
+'<ul><li>물은 <b>4°C에서 부피가 가장 작아요</b>(밀도가 가장 커요).</li><li>그래서 0~4°C에서는 데워도 오히려 부피가 줄어들어요.</li><li>4°C보다 높을 때도 늘어나는 정도가 온도에 따라 크게 달라져요(20°C에서 1°C당 약 0.02%, 60°C에서 약 0.05%).</li><li>그 덕분에 겨울에 호수는 위에서부터 얼고, 아래쪽 4°C 물속에서 물고기가 살 수 있어요.</li></ul>'+
+'<h3>5. 왜 에탄올로 온도계를 만들까?</h3>'+
+'<div class="tbl"><table><tr><th>액체</th><th>1°C당 부피 증가</th><th>어는점</th><th>끓는점</th><th>좋은 점</th><th>아쉬운 점</th></tr>'+
+'<tr><td>에탄올</td><td>약 0.11 %</td><td>약 −114°C</td><td>약 78°C</td><td>많이 늘어남, 안전, 저렴</td><td>높은 온도는 못 잼</td></tr>'+
+'<tr><td>수은</td><td>약 0.018 %</td><td>약 −39°C</td><td>약 357°C</td><td>매우 고르게 늘어남</td><td>독성이 있음</td></tr>'+
+'<tr><td>물</td><td>약 0.021 % (20°C)</td><td>0°C</td><td>100°C</td><td>구하기 쉬움</td><td>고르지 않음, 쉽게 얼음</td></tr></table></div>'+
+'<p>에탄올은 수은보다 약 6배 많이 늘어나서 눈금을 읽기 쉽고, 깨져도 비교적 안전해요. 수은은 더 고르고 넓은 범위를 잴 수 있어 예전에 정밀한 온도계에 쓰였지만, 지금은 독성 때문에 거의 쓰지 않아요.</p>'+
+'<h3>6. 생각해 볼 질문</h3>'+
+'<details><summary>Q1. 영하 50°C인 곳에서는 수은 온도계와 알코올 온도계 중 무엇을 써야 할까?</summary><p>알코올 온도계예요. 수은은 약 −39°C에서 얼어 버려요.</p></details>'+
+'<details><summary>Q2. 끓는 물의 온도를 알코올 온도계로 재면 어떻게 될까?</summary><p>에탄올은 약 78°C에서 끓어서 100°C를 잴 수 없고, 온도계가 망가질 수 있어요.</p></details>'+
+'<details><summary>Q3. 물로 온도계를 만들면 어떤 문제가 생길까?</summary><p>조금밖에 안 늘어나고, 4°C 근처에서 거꾸로 변해서 같은 높이가 두 온도를 뜻할 수 있어요. 0°C 아래에서는 얼어요.</p></details>'+
+'<details><summary>Q4. 온도계의 관을 아주 가늘게 만드는 이유는?</summary><p>같은 부피가 늘어나도 기둥이 더 높이 올라가 눈금 간격이 넓어지고, 온도를 더 자세히 읽을 수 있어요.</p></details>';
+var modal=$('modal');
+function openModal(html){$('mbox').innerHTML=html;modal.classList.add('on');$('mbox').scrollTop=0;$('mclose').onclick=closeModal;$('mclose').focus()}
+function closeModal(){modal.classList.remove('on')}
+modal.addEventListener('click',function(e){if(e.target===modal)closeModal()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()},true);
 
 var pages=[];
 
@@ -391,11 +439,14 @@ init:function(svg,p){
 }});
 
 /* 9. Iron thermostat */
-pages.push({title:'9. 다리미는 어떻게 온도를 맞출까?',sub:'설정 온도가 되면 바이메탈이 휘어 전기를 스스로 끊어요',note:'식으면 바이메탈이 다시 펴져 연결돼요 → 끊기고 이어지기를 반복하며 온도 유지',
+pages.push({title:'9. 다리미는 어떻게 온도를 맞출까?',sub:'설정 온도가 되면 바이메탈이 휘어 전기를 스스로 끊어요',note:'처음 설정 온도에 닿으면 자동으로 멈춰요 · 실제 다리미도 표시등이 켜졌다 꺼졌다 하며 딸깍 소리가 나요',
 init:function(svg,p){
- var T=20,closed=true,power=true,setT=160,t=0;
- UI.slider(p,'설정 온도 (온도 조절 다이얼)',100,200,5,setT,function(v){return v+'°C'},function(v){setT=v});
- var bs=UI.btns(p,[['전원 끄기',function(){power=!power;bs[0].textContent=power?'전원 끄기':'전원 켜기'}],['처음부터',function(){T=20;closed=true;power=true;bs[0].textContent='전원 끄기'}]]);
+ var T=20,closed=true,power=false,setT=160,started=false,running=true,firstCut=false,explain=false,clickT=0;
+ function clack(){try{var a=ac(),n=Math.floor(a.sampleRate*0.045),bf=a.createBuffer(1,n,a.sampleRate),dd=bf.getChannelData(0);for(var i=0;i<n;i++)dd[i]=(Math.random()*2-1)*Math.pow(1-i/n,5);
+  var src=a.createBufferSource();src.buffer=bf;var fl=a.createBiquadFilter();fl.type='bandpass';fl.frequency.value=2600;fl.Q.value=0.7;var gn=a.createGain();gn.gain.value=3;src.connect(fl);fl.connect(gn);gn.connect(a.destination);src.start();tone(1700,0.05,'square',0.3)}catch(e){}}
+ UI.slider(p,'설정 온도 (온도 조절 다이얼)',100,200,5,setT,function(v){return v+'°C'},function(v){setT=v;draw()});
+ var bs=UI.btns(p,[['플러그 꽂기',function(){try{ac()}catch(e){}power=!power;if(power)started=true;lbl();draw()}],['잠깐 멈춤',function(){if(!started)return;running=!running;if(running)explain=false;lbl();draw()}],['처음부터',function(){T=20;closed=true;power=false;started=false;running=true;firstCut=false;explain=false;clickT=0;lbl();draw()}]]);
+ function lbl(){bs[0].textContent=power?'플러그 빼기':'플러그 꽂기';bs[1].textContent=running?'잠깐 멈춤':'계속'}
  var r=UI.ro(p,'다리미 바닥 온도'),r2=UI.ro(p,'전기'),m=UI.msg(p);
  function draw(){
   var on=power&&closed,wc=on?C.warn:C.wire,sc=mix(C.steel,C.hot,(T-20)/180),g='';
@@ -405,7 +456,14 @@ init:function(svg,p){
   g+='<path d="M70 470 L705 470 Q745 470 728 432 L640 262 Q620 225 578 225 L116 225 Q70 225 70 272 Z" fill="#1f3242" stroke="'+C.dim+'" stroke-width="5" stroke-linejoin="round"/>';
   if(T>60)g+='<rect x="70" y="502" width="680" height="10" rx="5" fill="'+C.hot+'" opacity="'+Math.min(0.35,(T-60)/400).toFixed(2)+'"/>';
   g+='<path d="M62 470 L715 470 Q768 470 760 498 L62 498 Z" fill="'+sc+'"/>'+tx(400,530,'바닥판',{anchor:'middle',size:19});
-  g+='<path d="M70 360 Q30 370 34 420 Q38 470 20 520" stroke="'+C.dim+'" stroke-width="5" fill="none"/>'+tx(30,545,'전선',{size:18});
+  var py=power?496:420;
+  g+='<rect x="4" y="500" width="48" height="52" rx="6" fill="#2a3a48" stroke="'+C.dim+'" stroke-width="2"/><rect x="19" y="506" width="5" height="12" fill="#0d151c"/><rect x="32" y="506" width="5" height="12" fill="#0d151c"/>'+tx(60,545,'콘센트',{size:18});
+  g+='<path d="M70 360 Q28 370 28 400 L28 '+(py-28)+'" stroke="'+C.dim+'" stroke-width="5" fill="none"/>';
+  g+='<rect x="12" y="'+(py-30)+'" width="32" height="30" rx="5" fill="#cfd6dc"/><line x1="21" y1="'+py+'" x2="21" y2="'+(py+16)+'" stroke="#cfd6dc" stroke-width="4"/><line x1="35" y1="'+py+'" x2="35" y2="'+(py+16)+'" stroke="#cfd6dc" stroke-width="4"/>';
+  if(!power)g+=tx(60,440,'플러그 빠짐',{size:18,fill:C.dim});
+  if(on)g+='<circle cx="165" cy="256" r="26" fill="#ffd84d" opacity=".3"/>';
+  g+='<circle cx="165" cy="256" r="13" fill="'+(on?'#ffd84d':'#3a4a58')+'" stroke="'+C.dim+'" stroke-width="2"/>'+tx(186,263,on?'표시등 켜짐':'표시등',{size:18,fill:on?C.warn:C.dim,w:on?600:400});
+  if(clickT>0)g+=tx(548,336,'딸깍!',{size:28,fill:C.warn,w:700});
   g+=tx(30,50,'다리미 속 회로',{size:22,fill:C.ink});
   g+='<circle cx="130" cy="370" r="24" fill="#2a3a48" stroke="'+C.dim+'" stroke-width="2"/>'+tx(130,378,'~',{anchor:'middle',size:26,fill:C.ink})+tx(130,330,'전원',{anchor:'middle',size:17});
   g+='<path d="M130 346 L130 300 L244 300" stroke="'+wc+'" stroke-width="5" fill="none"/>';
@@ -416,17 +474,29 @@ init:function(svg,p){
   g+='<path d="'+P(hz)+'" stroke="'+hc+'" stroke-width="5" fill="none"/>'+tx(410,410,'열선',{anchor:'middle',size:19});
   g+='<rect x="508" y="274" width="24" height="14" rx="3" fill="#c9a227"/>'+tx(540,284,'접점',{size:17});
   g+='<rect x="244" y="278" width="26" height="44" rx="4" fill="#55687a"/>';
-  var tip=closed?292:304+Math.min(36,Math.max(0,T-setT+4)*0.6),top=[],bot=[];
+  var tip=closed?292:explain?324:304+Math.min(36,Math.max(0,T-setT+4)*0.6),top=[],bot=[];
   for(var s2=0;s2<=250;s2+=10){var y=300+(tip-300)*Math.pow(s2/250,2);top.push([270+s2,y-5]);bot.push([270+s2,y+5])}
   g+='<path d="'+P(top)+'" stroke="#d98a4e" stroke-width="9" fill="none"/><path d="'+P(bot)+'" stroke="#a9b4bd" stroke-width="9" fill="none"/>';
   g+=tx(280,370,'바이메탈 (위: 구리, 아래: 철)',{size:17});
+  g+=tx(780,50,'설정 온도 '+setT+'°C',{anchor:'end',size:28,fill:C.warn,w:700});
+  if(explain){g+='<circle cx="520" cy="296" r="30" fill="none" stroke="'+C.hot+'" stroke-width="4"/>';
+   g+='<rect x="150" y="70" width="620" height="186" rx="14" fill="#13202b" stroke="'+C.warn+'" stroke-width="3" opacity=".97"/>';
+   g+=tx(460,110,'멈춤! 설정 온도 '+setT+'°C 도달',{anchor:'middle',size:26,fill:C.warn,w:700});
+   g+=tx(180,152,'① 구리가 철보다 더 늘어나 바이메탈이 아래로 휘어요',{size:21,fill:C.ink});
+   g+=tx(180,188,'② 딸깍! 접점에서 떨어져 전기가 끊겨요 (표시등 꺼짐)',{size:21,fill:C.ink});
+   g+=tx(180,224,'③ 열선에 전류가 흐르지 않아 더 뜨거워지지 않아요',{size:21,fill:C.ink});}
   svg.innerHTML=g;
   r.set(Math.round(T)+'°C',tcol(T,20,160));r2.set(on?'흐름':'끊김',on?C.warn:'');
-  if(!power)m.set('전원이 꺼져 있어요',C.steel,'식어 가는 중이에요');
-  else if(on)m.set('접점 연결 → 가열 중',C.warn,'전류가 흘러 열선이 뜨거워져요');
-  else m.set('바이메탈이 휘어 끊김',C.cold,'식으면 다시 펴져서 연결돼요');
+  if(!started)m.set('바닥이 '+setT+'°C가 되면?',C.warn,'어떤 일이 생길지 예상한 뒤 플러그를 꽂아요');
+  else if(explain)m.set('전기가 끊겼어요',C.cold,'계속을 누르면 다시 식으며 연결돼요');
+  else if(!running)m.set('잠깐 멈춤',C.steel,'계속을 누르면 이어서 진행돼요');
+  else if(!power)m.set('플러그가 빠져 있어요',C.steel,'전기가 안 들어와 식어 가요');
+  else if(on)m.set('접점 연결 → 가열 중',C.warn,'표시등이 켜지고 열선이 뜨거워져요');
+  else m.set('바이메탈이 휘어 끊김',C.cold,'표시등 꺼짐 · 식으면 다시 연결돼요');
  }
- every(60,function(){var heat=power&&closed;T+=heat?(260-T)*0.012:(20-T)*0.006;if(closed&&T>=setT+4)closed=false;else if(!closed&&T<=setT-4)closed=true;draw()});
+ every(60,function(){if(clickT>0){clickT--;if(!running)draw()}if(!running||!started)return;var heat=power&&closed;T+=heat?(260-T)*0.012:(20-T)*0.006;
+  if(closed&&T>=setT){closed=false;clack();clickT=18;if(!firstCut){firstCut=true;running=false;explain=true;T=setT;lbl()}}
+  else if(!closed&&T<=setT-8)closed=true;draw()});
  draw();
 }});
 
@@ -438,7 +508,7 @@ init:function(svg,p){
  var r=UI.ro(p,'가운데 처진 깊이'),r2=UI.ro(p,'전선 길이 변화 (300 m)'),r3=UI.ro(p,'전선을 당기는 힘 (장력)'),m=UI.msg(p);
  var S=300,d0=8,L0=S+8*d0*d0/(3*S);
  function sag(T){var L=L0*(1+19e-6*(T-15));return Math.sqrt(3*S*(L-S)/8)}
- function px(d){return d<d0?Math.max(18,240-(d0-d)*165):240+(d-d0)*95}
+ function px(d){return d<d0?Math.max(14,110-(d0-d)*72):110+(d-d0)*105}
  function wire(d){var pts=[],h=px(d);for(var x=100;x<=700;x+=10)pts.push([x,110+4*h*(x-100)*(700-x)/360000]);return P(pts)}
  function tower(x){return '<polygon points="'+(x-32)+',500 '+(x+32)+',500 '+(x+10)+',100 '+(x-10)+',100" fill="none" stroke="#7d8b97" stroke-width="4"/><path d="M'+(x-28)+' 460 L'+(x+24)+' 380 L'+(x-20)+' 300 L'+(x+17)+' 220 L'+(x-13)+' 150 M'+(x+28)+' 460 L'+(x-24)+' 380 L'+(x+20)+' 300 L'+(x-17)+' 220 L'+(x+13)+' 150" stroke="#7d8b97" stroke-width="2" fill="none"/><rect x="'+(x-46)+'" y="104" width="92" height="8" fill="#7d8b97"/>'}
  function draw(){
@@ -467,6 +537,7 @@ init:function(svg,p){
 pages.push({title:'11. 알코올 온도계의 비밀',sub:'에탄올은 많이, 그리고 고르게 늘어나서 눈금 읽기가 쉬워요',note:'에탄올 부피팽창 약 1.1×10⁻³/°C · 물은 그보다 훨씬 작고 4°C 근처에서는 거꾸로 변해요',
 init:function(svg,p){
  var s=UI.slider(p,'온도',-20,60,1,20,function(v){return v+'°C'},draw);
+ UI.btns(p,[['자세한 원리 이야기',function(){openModal(INFO11)}]]);
  var r=UI.ro(p,'에탄올 부피 변화 (0°C 기준)'),r2=UI.ro(p,'물 부피 변화 (0°C 기준)'),m=UI.msg(p);
  var WT=[[0,1.00013],[4,1],[10,1.00027],[20,1.00177],[30,1.00435],[40,1.00782],[50,1.0121],[60,1.01709]];
  function relW(T){T=Math.max(0,T);for(var i=1;i<WT.length;i++)if(T<=WT[i][0]){var a=WT[i-1],b=WT[i];return a[1]+(b[1]-a[1])*(T-a[0])/(b[0]-a[0])}return WT[WT.length-1][1]}
@@ -577,14 +648,14 @@ init:function(svg,p){
 var cur=0,dots=$('dots');
 pages.forEach(function(pg,i){var b=document.createElement('button');b.className='dot';b.textContent=i+1;b.setAttribute('aria-label',(i+1)+'쪽');b.onclick=function(){show(i)};dots.appendChild(b)});
 function show(i){
- timers.forEach(clearInterval);timers=[];cur=(i+pages.length)%pages.length;var pg=pages[cur];
+ closeModal();timers.forEach(clearInterval);timers=[];cur=(i+pages.length)%pages.length;var pg=pages[cur];
  $('title').textContent=pg.title;$('sub').textContent=pg.sub;$('note').textContent=pg.note||'';
  $('svg').setAttribute('aria-label',pg.title);$('svg').innerHTML='';$('panel').innerHTML='';
  Array.prototype.forEach.call(dots.children,function(d,k){d.classList.toggle('on',k===cur)});
  pg.init($('svg'),$('panel'));window.scrollTo(0,0);
 }
 $('prev').onclick=function(){show(cur-1)};$('next').onclick=function(){show(cur+1)};
-document.addEventListener('keydown',function(e){if(e.target.tagName==='INPUT')return;if(e.key==='ArrowRight'||e.key==='PageDown')show(cur+1);if(e.key==='ArrowLeft'||e.key==='PageUp')show(cur-1)});
+document.addEventListener('keydown',function(e){if(e.target.tagName==='INPUT'||modal.classList.contains('on'))return;if(e.key==='ArrowRight'||e.key==='PageDown')show(cur+1);if(e.key==='ArrowLeft'||e.key==='PageUp')show(cur-1)});
 var fsb=$('fs');
 function fsEl(){return document.fullscreenElement||document.webkitFullscreenElement}
 fsb.onclick=function(){var de=document.documentElement;if(fsEl()){(document.exitFullscreen||document.webkitExitFullscreen).call(document)}else{(de.requestFullscreen||de.webkitRequestFullscreen).call(de)}};
