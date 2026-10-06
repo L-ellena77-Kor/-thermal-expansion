@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>열팽창 이야기 — 12가지 시뮬레이션</title>
+<title>열팽창 이야기 — 13가지 시뮬레이션</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -63,7 +63,7 @@ input[type=range]{width:100%;height:34px;accent-color:#a9b4bd;cursor:pointer}
   <p class="psub" id="sub"></p>
   <div class="grid">
     <div class="stage"><svg id="svg" viewBox="0 0 800 560" role="img"></svg></div>
-    <div><div id="panel"></div><p class="note" id="note"></p><p class="note">Copyright 2026 오효선</p></div>
+    <div><div id="panel"></div><p class="note" id="note"></p><p class="note">Copyright 2026 엘레나</p></div>
   </div>
 </main>
 <script>
@@ -431,25 +431,26 @@ init:function(svg,p){
 }});
 
 /* 10. Power line */
-pages.push({title:'10. 여름엔 처지고 겨울엔 팽팽한 전깃줄',sub:'전선이 늘어나면 더 처지고, 줄어들면 팽팽해져요',note:'철탑 사이 300 m, 15°C에서 8 m 처진 알루미늄 전선(α 약 19×10⁻⁶/°C) 기준 · 처짐은 실제 비율',
+pages.push({title:'10. 여름엔 처지고 겨울엔 팽팽한 전깃줄',sub:'전선이 늘어나면 더 처지고, 줄어들면 팽팽해져요',note:'철탑 사이 300 m, 15°C에서 8 m 처진 알루미늄 전선(α 약 19×10⁻⁶/°C) 기준 · 그림의 처짐 차이는 과장',
 init:function(svg,p){
  var s=UI.slider(p,'전선 온도',-15,40,1,15,function(v){return v+'°C'},draw);
  UI.btns(p,[['겨울 -15°C',function(){s.set(-15);draw()}],['봄·가을 15°C',function(){s.set(15);draw()}],['여름 40°C',function(){s.set(40);draw()}]]);
  var r=UI.ro(p,'가운데 처진 깊이'),r2=UI.ro(p,'전선 길이 변화 (300 m)'),r3=UI.ro(p,'전선을 당기는 힘 (장력)'),m=UI.msg(p);
  var S=300,d0=8,L0=S+8*d0*d0/(3*S);
  function sag(T){var L=L0*(1+19e-6*(T-15));return Math.sqrt(3*S*(L-S)/8)}
- function wire(d){var pts=[];for(var x=100;x<=700;x+=10)pts.push([x,110+4*d*30*(x-100)*(700-x)/360000]);return P(pts)}
+ function px(d){return d<d0?Math.max(18,240-(d0-d)*165):240+(d-d0)*95}
+ function wire(d){var pts=[],h=px(d);for(var x=100;x<=700;x+=10)pts.push([x,110+4*h*(x-100)*(700-x)/360000]);return P(pts)}
  function tower(x){return '<polygon points="'+(x-32)+',500 '+(x+32)+',500 '+(x+10)+',100 '+(x-10)+',100" fill="none" stroke="#7d8b97" stroke-width="4"/><path d="M'+(x-28)+' 460 L'+(x+24)+' 380 L'+(x-20)+' 300 L'+(x+17)+' 220 L'+(x-13)+' 150 M'+(x+28)+' 460 L'+(x-24)+' 380 L'+(x+20)+' 300 L'+(x-17)+' 220 L'+(x+13)+' 150" stroke="#7d8b97" stroke-width="2" fill="none"/><rect x="'+(x-46)+'" y="104" width="92" height="8" fill="#7d8b97"/>'}
  function draw(){
   var T=s.v,d=sag(T),col=tcol(T,15,25),L=L0*(1+19e-6*(T-15)),g='';
   if(T>=25)g+='<circle cx="400" cy="50" r="26" fill="#ffc04d"/>';
-  if(T<=0)[[200,60],[330,40],[470,70],[600,45],[260,160],[540,170]].forEach(function(q){g+=tx(q[0],q[1],'*',{size:34,fill:'#dfeaf3',anchor:'middle'})});
+  if(T<=0)[[200,60],[330,40],[470,70],[600,45],[250,300],[560,320]].forEach(function(q){g+=tx(q[0],q[1],'*',{size:34,fill:'#dfeaf3',anchor:'middle'})});
   g+='<rect x="0" y="500" width="800" height="60" fill="#22303b"/>'+tower(90)+tower(710);
   g+='<path d="'+wire(d0)+'" fill="none" stroke="'+C.wire+'" stroke-width="2" stroke-dasharray="8 8"/>';
   g+='<path d="'+wire(d)+'" fill="none" stroke="'+col+'" stroke-width="6"/>';
-  var yb=110+d*30;
+  var yb=110+px(d);
   g+='<line x1="400" y1="110" x2="400" y2="'+yb+'" stroke="'+C.ink+'" stroke-width="2"/><line x1="388" y1="110" x2="412" y2="110" stroke="'+C.ink+'" stroke-width="2"/>';
-  g+=tx(412,(110+yb)/2+8,d.toFixed(2)+' m',{size:24,fill:C.ink,w:700});
+  g+=tx(412,Math.max(150,(110+yb)/2+8),d.toFixed(2)+' m',{size:24,fill:C.ink,w:700});
   g+=tx(560,yb+30,'점선: 15°C 때 모습',{size:17});
   g+=tx(30,545,'철탑 사이 300 m',{size:18});
   svg.innerHTML=g;
@@ -537,6 +538,39 @@ init:function(svg,p){
   else m.set('온도가 고르게 퍼졌어요',C.ok,'이제는 위아래가 함께 늘어났어요');
  }
  every(50,function(){if(poured){if(fill>4)fill--;step()}draw()});
+ draw();
+}});
+
+/* 13. Ring quiz */
+pages.push({title:'13. 퀴즈: 고리를 데우면 안쪽 원은?',sub:'금속 고리 판을 가열하면 안쪽 원의 지름은 어떻게 될까요?',note:'구리 고리, 안지름 4 cm 기준 계산 · 그림의 변화는 크게 과장했어요',
+init:function(svg,p){
+ var pick=-1,shown=false,fillHole=false,T=20,goal=20;
+ var opts=['작아진다','그대로다','커진다'];
+ var lab=div('lab');lab.textContent='내 생각은?';p.appendChild(lab);
+ var qb=UI.btns(p,opts.map(function(o,i){return [o,function(){pick=i;qb.forEach(function(b,k){b.style.background=k===i?C.ink:'';b.style.color=k===i?'#13202b':''});draw()}]}));
+ var ab=UI.btns(p,[['정답 보기',function(){shown=true;goal=500}],['안쪽 원 채워 보기',function(){fillHole=!fillHole;ab[1].textContent=fillHole?'채운 조각 빼기':'안쪽 원 채워 보기';draw()}],['처음으로',function(){shown=false;goal=20;T=20;pick=-1;fillHole=false;ab[1].textContent='안쪽 원 채워 보기';qb.forEach(function(b){b.style.background='';b.style.color=''});draw()}]]);
+ var r=UI.ro(p,'안쪽 원의 지름 (20°C에서 4 cm)'),m=UI.msg(p);
+ function draw(){
+  var sc=1+0.00036*(T-20),col=tcol(T,20,300),cx=290,cy=295,R=180,ri=80,g='';
+  function ring(a,b){return 'M'+(cx-a)+' '+cy+' a'+a+' '+a+' 0 1 0 '+(2*a)+' 0 a'+a+' '+a+' 0 1 0 '+(-2*a)+' 0 Z M'+(cx-b)+' '+cy+' a'+b+' '+b+' 0 1 0 '+(2*b)+' 0 a'+b+' '+b+' 0 1 0 '+(-2*b)+' 0 Z'}
+  g+=tx(30,48,'위에서 본 금속 고리 판',{size:22,fill:C.ink});
+  if(T>25)g+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R*sc+30)+'" fill="'+C.hot+'" opacity="'+Math.min(0.15,(T-20)/2500).toFixed(3)+'"/>';
+  g+='<path d="'+ring(R*sc,ri*sc)+'" fill="'+col+'" fill-rule="evenodd"/>';
+  for(var a=0;a<360;a+=20){var t=a*Math.PI/180;g+='<line x1="'+(cx+ri*sc*Math.cos(t)+6)+'" y1="'+(cy+ri*sc*Math.sin(t))+'" x2="'+(cx+R*sc*Math.cos(t)-6)+'" y2="'+(cy+R*sc*Math.sin(t))+'" stroke="#00000033" stroke-width="2"/>'}
+  [R,ri].forEach(function(q){g+='<circle cx="'+cx+'" cy="'+cy+'" r="'+q+'" fill="none" stroke="'+C.ink+'" stroke-width="2" stroke-dasharray="8 7"/>'});
+  if(fillHole)g+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(ri*sc-3)+'" fill="'+col+'" stroke="#13202b" stroke-width="3"/>'+tx(cx,cy+8,'같은 금속 조각',{anchor:'middle',size:18,fill:'#13202b',w:600});
+  if(shown&&T>40){[0,90,180,270].forEach(function(d){var t=d*Math.PI/180,x1=cx+(ri*sc-40)*Math.cos(t),y1=cy+(ri*sc-40)*Math.sin(t),x2=cx+(ri*sc-8)*Math.cos(t),y2=cy+(ri*sc-8)*Math.sin(t);
+   if(!fillHole)g+='<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+C.warn+'" stroke-width="5"/><circle cx="'+x2+'" cy="'+y2+'" r="6" fill="'+C.warn+'"/>'})}
+  g+=tx(560,170,'점선:',{size:19})+tx(560,196,'가열 전 크기',{size:19});
+  g+=tx(560,260,'고리 온도',{size:19})+tx(560,300,Math.round(T)+'°C',{size:34,fill:col,w:700});
+  if(shown)g+=tx(560,380,'모든 간격이',{size:22,fill:C.ink,w:600})+tx(560,410,'똑같은 비율로',{size:22,fill:C.ink,w:600})+tx(560,440,'커져요',{size:22,fill:C.warn,w:700});
+  svg.innerHTML=g;
+  var dIn=4*(1+17e-6*(T-20));r.set(dIn.toFixed(3)+' cm',shown?C.warn:'');
+  if(!shown)m.set(pick<0?'어느 쪽일까요?':'정답 보기를 눌러 확인!',C.steel,pick<0?'세 가지 중 하나를 골라 보세요':'내 생각: '+opts[pick]);
+  else if(T<480)m.set('가열하는 중…',col,'안쪽 원의 둘레를 잘 지켜보세요');
+  else m.set((pick===2?'정답! ':pick>=0?'아쉬워요! ':'')+'안쪽 원도 커져요',pick===2?C.ok:C.warn,fillHole?'안쪽을 채운 조각도 커지니 안쪽 원도 커져요':'사진을 확대하듯 전체가 고르게 커져요');
+ }
+ every(40,function(){if(Math.abs(goal-T)>0.5){T+=(goal-T)*0.04;draw()}});
  draw();
 }});
 
