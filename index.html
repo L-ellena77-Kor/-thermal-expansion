@@ -387,13 +387,20 @@ init:function(svg,p){
 }});
 
 /* 6. String */
-pages.push({title:'6. 더운 날, 기타 줄이 풀리는 이유',sub:'금속 줄이 늘어나면 덜 팽팽해져 음이 낮아져요',note:'금속 줄(1번 줄, 미) 기준 계산 · 나무 몸통은 습도의 영향도 받아요',
+pages.push({title:'6. 더운 날, 기타 줄이 풀리는 이유',sub:'금속 줄이 늘어나면 덜 팽팽해져 음이 낮아져요',note:'소리는 차이가 잘 들리도록 6배 과장 · 금속 줄(1번 줄, 미) 기준 계산 · 나무 몸통은 습도의 영향도 받아요',
 init:function(svg,p){
  var bias=0,amp=0,ph=0;
  var s=UI.slider(p,'기온',5,40,1,20,function(v){return v+'°C'},draw);
- UI.btns(p,[['줄 튕기기',function(){amp=20;pluck(freq());}],['바른 음 듣기',function(){pluck(329.63)}],['줄감개로 조율',function(){bias=0.118*(s.v-20);draw()}]]);
+ var hist=[];
+ function play(k){if(k==='str'){amp=20;pluck(hear())}else pluck(329.63)}
+ function order(){return hist.length===2&&hist[0]!==hist[1]?hist.slice():['str','ref']}
+ function abLabel(){var o=order();bb[2].textContent='번갈아 듣기 ('+o.map(function(k){return k==='str'?'줄':'바른 음'}).join(' → ')+')'}
+ function rec(k){hist.push(k);if(hist.length>2)hist.shift();abLabel()}
+ var bb=UI.btns(p,[['줄 튕기기',function(){play('str');rec('str')}],['바른 음 듣기',function(){play('ref');rec('ref')}],['번갈아 듣기',function(){var o=order();play(o[0]);setTimeout(function(){play(o[1])},1100)}],['줄감개로 조율',function(){bias=0.118*(s.v-20);draw()}]]);
+ abLabel();
  var r=UI.ro(p,'지금 소리 (바른 음: 329.6 Hz)'),r2=UI.ro(p,'음 높이 차이'),m=UI.msg(p);
  function force(){return 72+bias-0.118*(s.v-20)}
+ function hear(){var c=1200*Math.log(freq()/329.63)/Math.LN2;return 329.63*Math.pow(2,c*6/1200)}
  function freq(){return 329.63*Math.sqrt(force()/72)}
  function draw(){
   var F=force(),f=freq(),cents=1200*Math.log(f/329.63)/Math.LN2,T=s.v,col=tcol(T,20,20),sag=Math.max(0,72-F)*5,g='';
@@ -423,23 +430,29 @@ init:function(svg,p){
 }});
 
 /* 7. Jar lid */
-pages.push({title:'7. 꽉 낀 금속 뚜껑 쉽게 여는 법',sub:'뚜껑만 뜨거운 물에 담그면 금속이 유리보다 더 늘어나요',note:'틈 변화는 지름 7 cm 뚜껑 기준 · 금속 α 약 12, 유리 α 약 9 (×10⁻⁶/°C)',
+pages.push({title:'7. 꽉 낀 금속 뚜껑 쉽게 여는 법',sub:'뚜껑을 뜨거운 물에 적시면 금속이 유리보다 더 늘어나요',note:'틈 변화는 지름 7 cm 뚜껑 기준 · 금속 α 약 12, 유리 α 약 9 (×10⁻⁶/°C)',
 init:function(svg,p){
- var st=null,shake=0;
- var where=UI.seg(p,'데우는 곳',['뚜껑만','병 전체'],0,function(){st=null;draw()});
- var s=UI.slider(p,'물 온도',20,80,1,20,function(v){return v+'°C'},function(){st=null;draw()});
- UI.btns(p,[['뚜껑 돌려 열기',function(){st=gapUm()>=25?'ok':'fail';shake=st==='fail'?12:0;draw()}],['처음으로',function(){st=null;s.set(20);draw()}]]);
+ var st=null,shake=0,spin=0;
+ var s=UI.slider(p,'물 온도',20,80,1,20,function(v){return v+'°C'},function(){st=null;spin=0;draw()});
+ UI.btns(p,[['뚜껑 돌려 열기',function(){st=gapUm()>=25?'ok':'fail';shake=st==='fail'?12:0;spin=0;draw()}],['처음으로',function(){st=null;spin=0;s.set(20);draw()}]]);
  var r=UI.ro(p,'나사 사이 틈이 넓어진 정도'),m=UI.msg(p);
- function gapUm(){var dT=s.v-20;return where.v===0?0.84*dT:0.21*dT}
+ function gapUm(){var dT=s.v-20;return 0.84*dT}
  function draw(){
-  var Tw=s.v,whole=where.v===1,gu=gapUm(),col=tcol(Tw,20,50),wc=mix('#9AD1FF','#ff8a45',(Tw-20)/60),g='',lo=st==='ok'?40:0,sx=shake>0?(shake%2?5:-5):0;
+  var Tw=s.v,whole=false,gu=gapUm(),col=tcol(Tw,20,50),wc=mix('#9AD1FF','#ff8a45',(Tw-20)/60),g='',lo=st==='ok'?Math.min(1,spin/50)*45:0,sx=shake>0?(shake%2?5:-5):0;
   g+=tx(30,50,'병을 거꾸로 세운 모습',{size:22,fill:C.ink});
   if(whole)g+='<rect x="70" y="80" width="380" height="450" rx="16" fill="none" stroke="'+C.dim+'" stroke-width="3"/><rect x="73" y="110" width="374" height="417" fill="'+wc+'" opacity=".35"/>';
   else g+='<rect x="70" y="350" width="380" height="180" rx="16" fill="none" stroke="'+C.dim+'" stroke-width="3"/><rect x="73" y="375" width="374" height="152" fill="'+wc+'" opacity=".35"/>';
   if(Tw>50){var sy=whole?96:362;[150,250,350].forEach(function(x){g+='<path d="M'+x+' '+sy+' q-10 -14 0 -28 q10 -14 0 -28" stroke="'+C.dim+'" stroke-width="3" fill="none"/>'})}
   g+='<rect x="140" y="60" width="240" height="250" rx="44" fill="#9fd3e0" fill-opacity=".18" stroke="#9fd3e0" stroke-width="3"/>';
   g+='<rect x="178" y="300" width="164" height="40" fill="#9fd3e0" fill-opacity=".18" stroke="#9fd3e0" stroke-width="3"/>';
-  g+='<g transform="translate('+sx+' '+lo+')"><rect x="166" y="326" width="188" height="70" rx="8" fill="'+col+'"/>'+(st==='ok'?'<path d="M140 430 A120 30 0 0 0 380 430" stroke="'+C.ok+'" stroke-width="4" fill="none"/><polygon points="380,430 366,420 368,438" fill="'+C.ok+'"/>':'')+'</g>';
+  var lid='<rect x="166" y="326" width="188" height="70" rx="8" fill="'+col+'"/>';
+  var off=((Math.min(spin,50)*6)%22);
+  lid+='<clipPath id="lidc"><rect x="166" y="326" width="188" height="70" rx="8"/></clipPath><g clip-path="url(#lidc)">';
+  for(var gx=166-22;gx<360;gx+=22){var xx=gx+(st==='ok'?off:0),sh=Math.cos(((xx-260)/94)*Math.PI/2);lid+='<line x1="'+xx+'" y1="328" x2="'+xx+'" y2="394" stroke="#0B2545" stroke-opacity="'+(0.12+0.25*Math.max(0,sh)).toFixed(2)+'" stroke-width="'+(2+3*Math.max(0,sh)).toFixed(1)+'"/>'}
+  lid+='</g>';
+  if(st==='ok'&&spin<50){var ar=Math.min(1,spin/15);lid+='<g opacity="'+ar+'"><path d="M150 425 A110 26 0 0 0 370 425" stroke="'+C.ok+'" stroke-width="5" fill="none"/><polygon points="370,425 354,414 356,436" fill="'+C.ok+'"/>'+'</g>'}
+  g+='<g transform="translate('+sx+' '+lo+')">'+lid+'</g>';
+  if(st==='ok')g+=tx(388,300,spin<50?'빙글빙글':'쏙!',{size:22,fill:C.ok,w:700});
   g+='<rect x="500" y="60" width="280" height="460" rx="14" fill="none" stroke="'+C.line+'" stroke-width="2"/>'+tx(640,94,'확대: 나사 부분',{anchor:'middle',size:21,fill:C.ink});
   var gp=6+Math.min(70,Math.max(0,gu)*1.2);
   g+='<rect x="530" y="120" width="70" height="350" fill="#9fd3e0" fill-opacity=".25" stroke="#9fd3e0" stroke-width="2"/>';
@@ -450,12 +463,12 @@ init:function(svg,p){
   g+=tx(565,500,'유리',{anchor:'middle',size:19})+tx(lx+38,500,'뚜껑',{anchor:'middle',size:19});
   svg.innerHTML=g;
   r.set(sgn(Math.max(0,gu),0)+' µm',gu>=25?C.ok:'');
-  if(st==='ok')m.set('빙글, 열렸어요!',C.ok,'뚜껑이 더 늘어나 나사 틈이 생겼어요');
-  else if(st==='fail')m.set('꽉 끼어 안 열려요',C.hot,whole?'유리도 같이 늘어나 틈이 별로 안 생겨요':'물이 더 뜨거워야 해요');
+  if(st==='ok')m.set(spin<50?'빙글빙글 돌아가요':'뚜껑이 열렸어요!',C.ok,'뚜껑이 더 늘어나 나사 틈이 생겼어요');
+  else if(st==='fail')m.set('꽉 끼어 안 열려요',C.hot,'물이 더 뜨거워야 해요');
   else if(Tw===20)m.set('꽉 낀 상태',C.steel,'물 온도를 올려 보세요');
-  else m.set(whole?'병과 뚜껑이 함께 늘어나요':'뚜껑만 늘어나요',col,whole?'늘어나는 정도 차이만큼만 틈이 생겨요':'금속 뚜껑 지름이 커져 틈이 생겨요');
+  else m.set('뚜껑이 늘어나요',col,'금속 뚜껑 지름이 커져 틈이 생겨요');
  }
- every(40,function(){if(shake>0){shake--;draw()}});
+ every(40,function(){if(shake>0){shake--;draw()}if(st==='ok'&&spin<51){spin++;draw()}});
  draw();
 }});
 
@@ -528,11 +541,12 @@ init:function(svg,p){
   g+='<path d="'+P(hz)+'" stroke="'+hc+'" stroke-width="5" fill="none"/>'+tx(410,410,'열선',{anchor:'middle',size:19});
   g+='<rect x="508" y="274" width="24" height="14" rx="3" fill="#c9a227"/>'+tx(540,284,'접점',{size:17});
   g+='<rect x="244" y="278" width="26" height="44" rx="4" fill="#5F7A9F"/>';
-  var tip=closed?292:explain?324:304+Math.min(36,Math.max(0,T-setT+4)*0.6),top=[],bot=[];
+  var tip=closed?292:292+32*Math.max(0,Math.min(1,(T-(setT-15))/15)),top=[],bot=[];
   for(var s2=0;s2<=250;s2+=10){var y=300+(tip-300)*Math.pow(s2/250,2);top.push([270+s2,y-5]);bot.push([270+s2,y+5])}
   g+='<path d="'+P(top)+'" stroke="#d98a4e" stroke-width="9" fill="none"/><path d="'+P(bot)+'" stroke="#C9D2DC" stroke-width="9" fill="none"/>';
   g+=tx(280,370,'바이메탈 (위: 구리, 아래: 철)',{size:17});
   g+=tx(780,50,'설정 온도 '+setT+'°C',{anchor:'end',size:28,fill:C.warn,w:700});
+  g+=tx(780,82,'다시 붙는 온도 '+(setT-15)+'°C',{anchor:'end',size:20,fill:C.cold,w:600});
   if(explain){g+='<circle cx="520" cy="296" r="30" fill="none" stroke="'+C.hot+'" stroke-width="4"/>';
    g+='<rect x="150" y="70" width="620" height="186" rx="14" fill="#0B2545" stroke="'+C.warn+'" stroke-width="3" opacity=".97"/>';
    g+=tx(460,110,'멈춤! 설정 온도 '+setT+'°C 도달',{anchor:'middle',size:26,fill:C.warn,w:700});
@@ -545,12 +559,12 @@ init:function(svg,p){
   else if(explain)m.set('전기가 끊겼어요',C.cold,'계속을 누르면 다시 식으며 연결돼요');
   else if(!running)m.set('잠깐 멈춤',C.steel,'계속을 누르면 이어서 진행돼요');
   else if(!power)m.set('플러그가 빠져 있어요',C.steel,'전기가 안 들어와 식어 가요');
-  else if(on)m.set('접점 연결 → 가열 중',C.warn,'표시등이 켜지고 열선이 뜨거워져요');
-  else m.set('바이메탈이 휘어 끊김',C.cold,'표시등 꺼짐 · 식으면 다시 연결돼요');
+  else if(on)m.set(firstCut?'다시 붙음 → 가열 중':'접점 연결 → 가열 중',C.warn,firstCut?setT+'°C가 되면 다시 떨어져요':'표시등이 켜지고 열선이 뜨거워져요');
+  else m.set('끊김 → 식는 중',C.cold,(setT-15)+'°C까지 내려가면 다시 붙어요');
  }
- every(60,function(){if(clickT>0){clickT--;if(!running)draw()}if(!running||!started)return;var heat=power&&closed;T+=heat?(260-T)*0.012:(20-T)*0.006;
+ every(60,function(){if(clickT>0){clickT--;if(!running)draw()}if(!running||!started)return;var heat=power&&closed;T+=heat?(260-T)*(firstCut?0.002:0.008):(20-T)*0.001;
   if(closed&&T>=setT){closed=false;clack();clickT=18;if(!firstCut){firstCut=true;running=false;explain=true;T=setT;lbl()}}
-  else if(!closed&&T<=setT-8)closed=true;draw()});
+  else if(!closed&&T<=setT-15)closed=true;draw()});
  draw();
 }});
 
