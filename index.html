@@ -118,7 +118,7 @@ button:hover{border-color:#FFE08A}
   <div class="intro" id="intro" hidden><div class="ph" id="introImgs"></div><div><p class="tag" id="introTag">실제 모습</p><div class="facts" id="introFacts"></div><div class="q" id="introQ"></div><button class="go" id="introGo">시뮬레이션 보기</button></div></div>
   <div class="grid" id="simGrid">
     <div class="stage"><svg id="svg" viewBox="0 0 800 560" role="img"></svg></div>
-    <div><div id="panel"></div><div class="pbtn" id="pbtn"></div><p class="note" id="note"></p><p class="note">Copyright 2026 엘레나</p></div>
+    <div id="side"><div id="panel"></div><div class="pbtn" id="pbtn"></div><p class="note" id="note"></p><p class="note">Copyright 2026 엘레나</p></div>
   </div>
 </main>
 <div class="modal" id="modal" role="dialog" aria-modal="true"><div class="mbox" id="mbox"></div></div>
@@ -141,7 +141,12 @@ function fit(el){if(!el||!el.isConnected)return;el.style.fontSize='';el.style.wh
  while(el.scrollWidth>el.clientWidth+1&&fs>13&&n<60){fs-=1;el.style.fontSize=fs+'px';n++}
  if(el.scrollWidth>el.clientWidth+1)el.style.whiteSpace='normal'}
 function fitAll(){document.querySelectorAll('.intro .facts p,.ptitle,.psub,.msg,.why,.ro .v,.ro .k,.lab,.note,.seg button').forEach(fit)}
-var rzT;window.addEventListener('resize',function(){clearTimeout(rzT);rzT=setTimeout(fitAll,150)});
+function fitH(reset){var sd=document.getElementById('side');if(!sd)return;var de=document.documentElement;
+ if(window.innerWidth<=900||document.getElementById('simGrid').hidden){sd.style.zoom='';return}
+ var z=reset?1:(parseFloat(sd.style.zoom)||1);sd.style.zoom=z;
+ while(de.scrollHeight>window.innerHeight+1&&z>0.55){z=Math.round((z-0.04)*100)/100;sd.style.zoom=z}}
+var rzT;window.addEventListener('resize',function(){clearTimeout(rzT);rzT=setTimeout(function(){fitAll();fitH(true)},150)});
+try{new ResizeObserver(function(){fitH(false)}).observe(document.getElementById('side'))}catch(e){}
 var uid=0;
 function div(c){var d=document.createElement('div');d.className=c;return d}
 var UI={
@@ -730,7 +735,7 @@ function show(i,skipIntro){
   else{img.style.transform='';bt.textContent=bt.dataset.zl}}});$('introFacts').innerHTML=ph.facts.map(function(t){return '<p>'+t+'</p>'}).join('');$('intro').classList.toggle('wide',!!ph.wide);$('introQ').textContent=ph.q;$('introTag').textContent=ph.tag||'실제 모습';$('introGo').onclick=function(){show(cur,true)};window.scrollTo(0,0);fitAll();fit($('introQ'));return}
  $('intro').hidden=true;$('simGrid').hidden=false;
  if(ph){var pb=document.createElement('button');pb.textContent='실제 사진 다시 보기';pb.onclick=function(){show(cur)};$('pbtn').appendChild(pb)}
- pg.init($('svg'),$('panel'));window.scrollTo(0,0);fitAll();try{var dd=dots.children[cur],box=dots;box.scrollLeft=dd.offsetLeft-box.clientWidth/2+dd.offsetWidth/2}catch(e){}
+ pg.init($('svg'),$('panel'));window.scrollTo(0,0);fitAll();fitH(true);try{var dd=dots.children[cur],box=dots;box.scrollLeft=dd.offsetLeft-box.clientWidth/2+dd.offsetWidth/2}catch(e){}
 }
 $('home').onclick=function(){show(0)};$('prev').onclick=function(){show(cur-1)};$('next').onclick=function(){show(cur+1)};
 document.addEventListener('keydown',function(e){if(e.target.tagName==='INPUT'||modal.classList.contains('on'))return;if(e.key==='Home')show(0);if(e.key==='ArrowRight'||e.key==='PageDown')show(cur+1);if(e.key==='ArrowLeft'||e.key==='PageUp')show(cur-1)});
